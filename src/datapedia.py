@@ -33,6 +33,12 @@ def limit(iterable, count):
         yield next(iterable)
         count -= 1
 
+if not os.path.exists('archives'):
+    os.mkdir('archives')
+
+if not os.path.exists('data'):
+    os.mkdir('data')
+
 @app.route('/')
 def home():
     results = (os.path.basename(path) for i, path in enumerate(glob.iglob('data/' + request.args.get('search', '*'))) if i < 10)
@@ -77,11 +83,11 @@ def raw(name, ext):
 
         # archive it right away
         with open('archives/' + name + '.' + ext + '/' + str(int(time())), 'w') as f:
-            json.dump(data, f)
+            json.dump(data, f, separators=(',', ':'))
 
         # replace the main file
         with open('data/' + name + '.' + ext, 'w') as f:	
-            json.dump(data, f)
+            json.dump(data, f, separators=(',', ':'))
 
     try:
         with open('data/' + name + '.' + ext, 'r') as f:
@@ -125,7 +131,7 @@ def raw_evolution(name, ext):
             except ValueError as ve:
                 app.logger.error(ve)
 
-    body = json.dumps(evolution)
+    body = json.dumps(evolution, separators = (',', ':'))
 
     headers = {}
     headers['Content-Encoding'] = 'utf-8'
