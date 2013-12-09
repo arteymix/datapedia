@@ -1,0 +1,32 @@
+{% extends 'datapedia.html' %}
+
+{% block title %}{{ name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+        <h2>{{ name }}</h2>
+        <p>Check the <a href="/{{ name }}/evolution">evolution</a> over time.</p>
+        <form action="{{ name }}.json" method="post">
+            {% if data %}
+                <table>
+                    {% for field in data %}
+                        <tr>
+                            <th>{{ field }}</th>
+                            <td><pre>{{ data[field ]}}</pre></td>
+                        </tr>
+                     {% endfor %}
+                </table>
+            {% endif %}
+            <p>
+                <label>Select license detail</label>
+                <select name="license">
+                    <option value="GPLv3">GPLv3</option>
+                    <option></option>
+                </select>
+           </p>
+        <p>
+           <label>Edit data</label>
+           <textarea name="data">{{ data['data'] }}</textarea>
+        </p>
+        <p><button type="submit">Save</button></p>
+    </form>
+{% endblock %}

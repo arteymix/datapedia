@@ -1,35 +1,57 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>{{name}}</title>
+        {% block head %}
+            <title>{% block title %}Datapedia{% endblock %}</title>
+            <meta name="description" content="{% block description %}Datapedia, the Wikipedia of data.{% endblock %}" />
+            <link rel="stylesheet" href="{{ url_for ('static', filename = 'datapedia.css') }}">
+        {% endblock %}
     </head>
     <body>
-        <a href="/"><h1>Datapedia</h1></a>
-        <h2>{{ name }}</h2>
-        <p>Check the <a href="/{{ name }}/evolution">evolution</a> over time.</p>
-        <form action="{{ name }}.json" method="post">
-            {% if data %}
-                <table>
-                    {% for field in data %}
-                        <tr>
-                            <th>{{ field }}</th>
-                            <td><pre>{{ data[field ]}}</pre></td>
-                        </tr>
-                     {% endfor %}
-                </table>
-            {% endif %}
-            <p>
-                <label>Select license detail</label>
-                <select name="license">
-                    <option value="GPLv3">GPLv3</option>
-                    <option></option>
-                </select>
-            </p>
-            <p>
-                <label>Edit data</label>
-                <textarea name="data">{{ data['data'] }}</textarea>
-            </p>
-            <p><button type="submit">Save</button></p>
-        </form>
+        <header>
+            {% block header %}
+                <a href="/"><h1>Datapedia</h1></a>
+            {% endblock %}
+        </header>
+        {% block content %}
+            <p>Welcome to Datapedia, the <a href="http://wikipedia.org">Wikipedia</a> of data!</p>
+            <p>Search use <a href="http://docs.python.org/3.3/library/fnmatch.html#module-fnmatch">fnmatch syntax</a> for searches with a limit of 10 results.</p>
+            <form>
+                <input type="search" name="search" value="{{search}}"/>
+                <button type="submit">Search</button>
+            </form>
+            <h2>Results for {{search}}</h2>
+            <ul>
+                {% for result in results %}
+                    <li><a href="{{ result }}">{{ result }}</a></li>
+                {% endfor %}
+            </ul>
+            <h2>How it works!</h2>
+            <p>Datapedia is made out of data entities. Data entities can be requested in different format by specifiying an extension.</p>
+            <p>The basic url is datapedia.org/{name}.{extension} where the name can be anything and the extension, a supported format.</p>
+            <p>Not specifying the extension will present an HTML templated view of the data.</p>
+            <h2>Supported data format</h2>
+            <p>Here is a list of supported data format:<p>
+            <ul>
+                <li>JSON using the json extension</li>
+            </ul>
+            <p>Data can be uploaded in any supported format and will be converted on request.</p>
+            <h3>Data regression testing</h3>
+            <p>Data containing regression (changes that breaks softwares), will not be accepted. The data will be analyzed to ensure that it is retro-compatible with the current existing version.</p>
+
+            <h3>Dev guide</h3>
+            <p>To request data from any format endpoint, ensure the following:</p>
+            <ul>
+                <li>You request an existing data (404 will be raised otherwise)</li>
+                <li>You agree with the license</li>
+                <li>HTTP code is 200</li>
+                <li>Content md5 matches Content-MD5 header</li>
+                <li>Content length matches Content-Length header</li>
+                <li>You know how the data is structured</li>
+            </ul>
+
+            <p>Received data containes more than just the data itself.</p>
+        {% endblock %}
+        <footer></footer>
     </body>
 </html>

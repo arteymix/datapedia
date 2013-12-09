@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for
 from time import time
 from datetime import datetime
 import glob
@@ -40,19 +40,20 @@ if not os.path.exists('data'):
     os.mkdir('data')
 
 @app.route('/')
-def home():
-    results = (os.path.basename(path) for i, path in enumerate(glob.iglob('data/' + request.args.get('search', '*'))) if i < 10)
-    return render_template('home.html', results=results)
+def datapedia():
+    search = request.args.get('search', '*')
+    results = (os.path.basename(path) for i, path in enumerate(glob.iglob('data/' + search)) if i < 10)
+    return render_template('datapedia.html', search = search, results = results)
 
 @app.route('/<name>')
-def datapedia(name):
+def data(name):
     # present the file with a template
     try:
         with open('data/' + name + '.json', 'r') as f:
-            return render_template('datapedia.html', name=name, data=json.load(f))
+            return render_template('data.html', name = name, data = json.load(f))
     except IOError:
         app.logger.info('No data for {} was found, proposing creation.', name)
-        return render_template('datapedia.html', name=name, data=None)
+        return render_template('data.html', name = name, data = None)
 
 @app.route('/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
 def raw(name, ext):	
@@ -61,7 +62,7 @@ def raw(name, ext):
         data = {}
 
         data['time'] = int(time())
-        data['approvers'] = []
+        data['approvers'] = [request.remote_addr]
         data['ip'] = request.remote_addr
         data['license'] = request.form['license'] # string
         data['sources'] = request.form.get('sources', []) # array of urls
@@ -104,6 +105,17 @@ def raw(name, ext):
     except IOError:
         return 'No data named ' + name + ' was found.', 404
 
+@app.route('/<name>.<ext>/approve')
+def approve(name, ext):
+    with open('data/{}.{}'.format(name, ext), 'r+') as f:
+        data = json.load(f)
+        f.seek(0)
+        if not request.remote_addr in data['approvers']:
+            data['approvers'].append(request.remote_addr)
+            json.dump(data, f)
+    
+    return redirect(url_for('raw', name = name, ext = ext))
+
 @app.route('/<name>.<ext>/<int:time>')
 def archive(name, ext, time):
     for f in sorted(glob.iglob('archives/' + name + '.' + ext + '/*')):
@@ -114,7 +126,7 @@ def archive(name, ext, time):
                 headers = {}
                 headers['Content-Encoding'] = 'utf-8'
                 headers['Content-Type'] = 'application/json'
-                headers['Content-MD5'] = md5.new(body).hexdigest()
+                headers['Contenat-MD5'] = md5.new(body).hexdigest()
                 headers['Content-Length'] = len(body.encode('utf-8'))
 
                 return body, 200, headers
