@@ -42,7 +42,7 @@ if not os.path.exists('data'):
 @app.route('/')
 def datapedia():
     search = request.args.get('search', '*')
-    results = (os.path.basename(path) for i, path in enumerate(glob.iglob('data/' + search)) if i < 10)
+    results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob('data/' + search), 10)))
     return render_template('datapedia.html', search = search, results = results)
 
 @app.route('/<name>')
@@ -107,11 +107,12 @@ def raw(name, ext):
 
 @app.route('/<name>.<ext>/approve')
 def approve(name, ext):
-    with open('data/{}.{}'.format(name, ext), 'r+') as f:
+    with open('data/{}.{}'.format(name, ext), 'r+') as f, open('archives/{}.{}/{}'.format(name, ext, str(int(time()))), 'w') as a:
         data = json.load(f)
         f.seek(0)
         if not request.remote_addr in data['approvers']:
             data['approvers'].append(request.remote_addr)
+            json.dump(data, a)
             json.dump(data, f)
     
     return redirect(url_for('raw', name = name, ext = ext))
