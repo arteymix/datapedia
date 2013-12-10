@@ -3,7 +3,7 @@
 {% block title %}Evolution of {{ name }} - {{ super() }}{% endblock %}
 
 {% block content %}
-    <h2>Evolution of <a href="/{{ name }}">{{ name }}</a></h2>
+    <h2>Evolution of <a href="{{ url_for('data', name = name) }}">{{ name }}</a> (<a href="{{ url_for('raw', name = name, ext = 'json') }}">json</a>)</h2>
     {% for diff in evolution %}
         <pre>{{ "\n".join(diff) }}</pre>
     {% endfor %}

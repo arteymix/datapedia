@@ -51,9 +51,12 @@ def data(name):
     try:
         with open('data/' + name + '.json', 'r') as f:
             return render_template('data.html', name = name, data = json.load(f))
-    except IOError:
-        app.logger.info('No data for {} was found, proposing creation.', name)
+    except IOError as ioe:
+        app.logger.info('No data for {} was found, proposing creation.'.format(name))
         return render_template('data.html', name = name, data = None)
+    except ValueError as ve:
+        app.logger.error(ve)
+        return ve.message
 
 @app.route('/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
 def raw(name, ext):	
@@ -65,18 +68,19 @@ def raw(name, ext):
         data['approvers'] = [request.remote_addr]
         data['ip'] = request.remote_addr
         data['license'] = request.form['license'] # string
-        data['sources'] = request.form.get('sources', []) # array of urls
+        data['sources'] = request.form.get('sources', '').split("\n") # array of urls
+
         try:
             data['data'] = json.loads(request.form['data']) # json-encoded data
         except ValueError as ve:
             app.logger.error(ve)
-            return 'Data could not be decoded.', 400
+            return ve.message, 400
 
         # validation
         try:
             assert 'license' in data
-        except AssertionError:
-            return 'Data are not valid.', 400
+        except AssertionError as ae:
+            return ae.message, 400
     
         # make a directory in the archives
         if not os.path.isdir('archives/' + name + '.' + ext):
@@ -112,8 +116,8 @@ def approve(name, ext):
         f.seek(0)
         if not request.remote_addr in data['approvers']:
             data['approvers'].append(request.remote_addr)
-            json.dump(data, a)
-            json.dump(data, f)
+            json.dump(data, a, separators = (',', ':'))
+            json.dump(data, f, separators = (',', ':'))
     
     return redirect(url_for('raw', name = name, ext = ext))
 

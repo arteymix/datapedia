@@ -4,7 +4,8 @@
         {% block head %}
             <title>{% block title %}Datapedia{% endblock %}</title>
             <meta name="description" content="{% block description %}Datapedia, the Wikipedia of data.{% endblock %}" />
-            <link rel="stylesheet" href="{{ url_for ('static', filename = 'datapedia.css') }}">
+            <link rel="stylesheet" href="{{ url_for('static', filename = 'datapedia.css') }}">
+            <script type="application/javascript" src="{{ url_for('static', filename = 'jquery-2.0.3.min.js') }}"></script>
         {% endblock %}
     </head>
     <body>
@@ -17,15 +18,15 @@
             <p>Welcome to Datapedia, the <a href="http://wikipedia.org">Wikipedia</a> of data!</p>
             <p>Search use <a href="http://docs.python.org/3.3/library/fnmatch.html#module-fnmatch">fnmatch syntax</a> for searches with a limit of 10 results.</p>
             <form>
-                <input type="search" name="search" value="{{search}}"/>
+                <input type="search" name="search" value="{{ search }}"/>
                 <button type="submit">Search</button>
             </form>
-            <h2>Results for {{search}}</h2>
+            <h2>Results for {{ search }}</h2>
             <ul>
                 {% for name, ext in results %}
                     <li>
                         <a href="{{ url_for('data', name=name) }}">{{ name }}</a>
-                        (<a href="{{url_for('raw', name=name, ext=ext)}}">{{ ext }}</a>)
+                        (<a href="{{ url_for('raw', name=name, ext=ext) }}">{{ ext }}</a>)
                     </li>
                 {% else %}
                     <li><a href="{{ url_for('data', name=search) }}">Create {{ search }}</a></li>
