@@ -29,10 +29,15 @@ import difflib
 app = Flask(__name__)
 
 def limit(iterable, count):
+    """
+    Limit number of iterated elements from an iterable.
+    count -- is the maximum number of elements to iterate through
+    """
     while count > 0:
         yield next(iterable)
         count -= 1
 
+# ensure archives and data folder exist
 if not os.path.exists('archives'):
     os.mkdir('archives')
 
@@ -41,34 +46,50 @@ if not os.path.exists('data'):
 
 @app.route('/')
 def datapedia():
+    """
+    Home page for datapedia.
+    """
     search = request.args.get('search', '*')
     results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob('data/' + search), 10)))
     return render_template('datapedia.html', search = search, results = results)
 
-@app.route('/<name>')
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/developers')
+def developers():
+    return render_template('developers.html')
+
+@app.route('/data/<name>')
 def data(name):
-    # present the file with a template
+    """ 
+    Present the data with an HTML template.
+    """
     try:
         with open('data/' + name + '.json', 'r') as f:
             return render_template('data.html', name = name, data = json.load(f))
-    except IOError as ioe:
-        app.logger.info('No data for {} was found, proposing creation.'.format(name))
-        return render_template('data.html', name = name, data = None)
-    except ValueError as ve:
-        app.logger.error(ve)
-        return ve.message
 
-@app.route('/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
+    except IOError as ioe:
+        # file not found
+        return render_template('data.html', name = name, data = None), 404
+
+    except ValueError as ve:
+        # invalid JSON
+        app.logger.error(ve)
+        return ve.message, 400
+
+@app.route('/data/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
 def raw(name, ext):	
     if request.method in {'POST', 'PUT'}:
-	    # write headers info
+	# write headers info
         data = {}
 
         data['time'] = int(time())
         data['approvers'] = [request.remote_addr]
         data['ip'] = request.remote_addr
         data['license'] = request.form['license'] # string
-        data['sources'] = request.form.get('sources', '').split("\n") # array of urls
+        data['sources'] = request.form.getlist('sources[]') # array of urls
 
         try:
             data['data'] = json.loads(request.form['data']) # json-encoded data
@@ -81,21 +102,21 @@ def raw(name, ext):
             assert 'license' in data
         except AssertionError as ae:
             return ae.message, 400
-    
+        
         # make a directory in the archives
-        if not os.path.isdir('archives/' + name + '.' + ext):
+        if not os.path.isdir('archives/{}.{}'.format(name, ext)):
             os.mkdir('archives/' + name + '.' + ext)
 
         # archive it right away
-        with open('archives/' + name + '.' + ext + '/' + str(int(time())), 'w') as f:
+        with open('archives/{}.{}/{}'.format(name, ext, str(int(time()))), 'w') as f:
             json.dump(data, f, separators=(',', ':'))
 
         # replace the main file
-        with open('data/' + name + '.' + ext, 'w') as f:	
+        with open('data/{}.{}'.format(name, ext), 'w') as f:	
             json.dump(data, f, separators=(',', ':'))
 
     try:
-        with open('data/' + name + '.' + ext, 'r') as f:
+        with open('data/{}.{}'.format(name, ext), 'r') as f:
             body = f.read()
 
             headers = {}
@@ -106,10 +127,10 @@ def raw(name, ext):
 
             return body, 200, headers
 
-    except IOError:
-        return 'No data named ' + name + ' was found.', 404
+    except IOError as ioe:
+        return ioe.message, 404
 
-@app.route('/<name>.<ext>/approve')
+@app.route('/approve/<name>.<ext>')
 def approve(name, ext):
     with open('data/{}.{}'.format(name, ext), 'r+') as f, open('archives/{}.{}/{}'.format(name, ext, str(int(time()))), 'w') as a:
         data = json.load(f)
@@ -121,9 +142,9 @@ def approve(name, ext):
     
     return redirect(url_for('raw', name = name, ext = ext))
 
-@app.route('/<name>.<ext>/<int:time>')
+@app.route('/data/<name>.<ext>/<int:time>')
 def archive(name, ext, time):
-    for f in sorted(glob.iglob('archives/' + name + '.' + ext + '/*')):
+    for f in sorted(glob.iglob('archives/{}.{}/*'.format(name, ext))):
         if int(os.path.basename(f)) >= time:
             with open(f) as f:
                 body = f.read()
@@ -138,7 +159,7 @@ def archive(name, ext, time):
 
     return 'No result older than ' + str(time) + ' were found.', 404
 
-@app.route('/<name>.<ext>/evolution')
+@app.route('/evolution/<name>.<ext>')
 def raw_evolution(name, ext):
     evolution = []
     for path in sorted(glob.iglob('archives/{}.{}/*'.format(name, ext))):
@@ -158,7 +179,7 @@ def raw_evolution(name, ext):
 
     return body, 200, headers
 
-@app.route('/<name>/evolution')
+@app.route('/evolution/<name>')
 def evolution(name):
     evolution = []
     last_time = 0
@@ -175,7 +196,7 @@ def evolution(name):
 
     return render_template('evolution.html', name = name, evolution = evolution)
 		
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug = True)
 
 

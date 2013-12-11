@@ -29,10 +29,10 @@
         </p>
         <p>
             <label>Sources</label>
-            {% for source in sources %}
+            <a href="#edit" onclick="$(this).parent().append('<input name=sources[] />')">Add</a>
+            {% for source in data['sources'] %}
                 <input name="sources[]" value="{{ source }}"/>
             {% endfor %}
-            <a href="#edit" onclick="$(this).parent().append('<input name=sources[] />')">Add</a>
         </p>
         <p>
            <label>Edit data</label>

@@ -1,3 +1,6 @@
 [submodule "lib/flask"]
 	path = lib/flask
 	url = https://github.com/mitsuhiko/flask
+[submodule "lib/lazysort"]
+	path = lib/lazysort
+	url = https://github.com/naftaliharris/lazysort.git
