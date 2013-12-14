@@ -35,9 +35,10 @@ app = Flask(__name__)
 
 # Data structure in the data (set of required )
 DATA_STRUCTURE = {
+    'ip': str,
     'time': int, 
     'license': str, 
-    'references': list, 
+    'approvers': list, 
     'sources': list,
     'data': object
 }
@@ -129,7 +130,17 @@ def datapedia():
     """
     search = request.args.get('search', '*')
     results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob('data/' + search), 10)))
-    return render_template('datapedia.html', search = search, results = results)
+
+    example = {
+        'time': int(time()), 
+        'license': 'CC BY', 
+        'data': [1, 2, 3], 
+        'sources' : ['http://datapedia.org/example'],
+        'approvers': ['127.0.0.1'],
+        'ip': '127.0.0.1'
+    }
+
+    return render_template('datapedia.html', search = search, results = results, structure = DATA_STRUCTURE, example = example)
 
 @app.route('/about')
 def about():

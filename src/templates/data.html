@@ -3,33 +3,48 @@
 {% block title %}{{ name }} - {{ super() }}{% endblock %}
 
 {% block content %}
-    <h2>{{ name }}</h2>
-    <p>Check the <a href="{{ url_for('evolution', name = name)}}">evolution</a> over time.</p>
-    {% if data and not request.remote_addr in data['approvers'] %}<p><a href="{{ url_for('approve', name = name, ext = 'json') }}">Approve</a> these data.</p>{% endif %}
-    <h3>View</h3>
-    <table>
-        {% for field in form %}
-            <tr>
-                <th>{{ field.name }}</th>
-                <td><pre>{{ field.default | tojson }}</pre></td>
-            </tr>
-        {% endfor %}
-    </table>
-    <h3 id="edit">Edit</h3>
-    <p>If you need a license, start checking <a href="http://creativecommons.org/choose/">Creative Common licenses</a>.</p>
-    <form method="post">
-        {% for field in form %}
-            <p>
-                <label>{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <ul class="errors">
-                        {% for error in field.errors %}
-                            <li class="error">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </p>
-        {% endfor %}
-    </form>
+    <div class="container">
+        
+        <section class="row">
+            <div class="col-xs-12">
+                <h2>{{ name }}</h2>
+                <p>Check the <a href="{{ url_for('evolution', name = name)}}">evolution</a> over time.</p>
+                {% if data and not request.remote_addr in data['approvers'] %}<p><a href="{{ url_for('approve', name = name, ext = 'json') }}">Approve</a> these data.</p>{% endif %}
+            </div> 
+        </section>
+        
+        <section class="row">
+            
+            <div class="col-xs-6">
+                <h3>View</h3>
+                <table class="table">
+                    {% for field in form %}
+                        <tr>
+                            <th>{{ field.name }}</th>
+                            <td><code>{{ field.default | tojson | safe }}</code></td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="col-xs-6">
+                <h3 id="edit">Edit</h3>
+                <p>If you need a license, start checking <a href="http://creativecommons.org/choose/">Creative Common licenses</a>.</p>
+                <form role="form" method="post">
+                    {% for field in form %}
+                        <div class="form-group{% if field.errors %} has-error{% endif %}">
+                            <label for="{{ field.id }}" class="control-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="help-block">
+                                    {% for error in field.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </form>
+            </div>
+        </section>
+    </div>
 {% endblock %}
