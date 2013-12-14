@@ -7,39 +7,29 @@
     <p>Check the <a href="{{ url_for('evolution', name = name)}}">evolution</a> over time.</p>
     {% if data and not request.remote_addr in data['approvers'] %}<p><a href="{{ url_for('approve', name = name, ext = 'json') }}">Approve</a> these data.</p>{% endif %}
     <h3>View</h3>
-    {% if data %}
-        <table>
-            {% for field in data %}
-                <tr>
-                    <th>{{ field }}</th>
-                    <td><pre>{{ data[field] }}</pre></td>
-                </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
+    <table>
+        {% for field in form %}
+            <tr>
+                <th>{{ field.name }}</th>
+                <td><pre>{{ field.default | tojson }}</pre></td>
+            </tr>
+        {% endfor %}
+    </table>
     <h3 id="edit">Edit</h3>
-    <form action="{{ url_for('raw', name = name, ext = 'json') }}" method="post">
-        <p>
-            <label>License detail</label>
-            <select name="license" onclick="if ($(this).val() === 'other') $(this).replaceWith('<input name=license />'); console.log($(this).val())">
-                <option value="Public domain" selected>Public domain</option>
-                <option value="GPLv3">GPLv3</option>
-                <option value="other">Other</option>
-            </select>
-        </p>
-        <p>
-            <label>Sources</label>
-            <a href="#edit" onclick="$(this).parent().append('<input name=sources[] />')">Add</a>
-            {% for source in data['sources'] %}
-                <input name="sources[]" value="{{ source }}"/>
-            {% endfor %}
-        </p>
-        <p>
-           <label>Edit data</label>
-           <textarea name="data">{{ data['data'] | tojson }}</textarea>
-        </p>
-        <p>
-            <button type="submit">Save</button>
-        </p>
+    <p>If you need a license, start checking <a href="http://creativecommons.org/choose/">Creative Common licenses</a>.</p>
+    <form method="post">
+        {% for field in form %}
+            <p>
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <ul class="errors">
+                        {% for error in field.errors %}
+                            <li class="error">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </p>
+        {% endfor %}
     </form>
 {% endblock %}

@@ -33,6 +33,15 @@ import forms
 
 app = Flask(__name__)
 
+# Data structure in the data (set of required )
+DATA_STRUCTURE = {
+    'time': int, 
+    'license': str, 
+    'references': list, 
+    'sources': list,
+    'data': object
+}
+
 def limit(iterable, count):
     """
     Limit number of iterated elements from an iterable.
@@ -130,55 +139,59 @@ def about():
 def developers():
     return render_template('developers.html')
 
-@app.route('/data/<name>')
+@app.route('/data/<name>', methods = {'GET', 'POST'})
 def data(name):
     """ 
     Present the data with an HTML template.
     """
+    form = forms.DataForm()
+
+    # load default data
     try:
         with open(find_data(name, 'json'), 'r') as f:
-            return render_template('data.html', name = name, data = json.load(f))
+            data = json.load(f)
+            for field in form:
+                field.default = data.get(field.name)
+    except IOError:
+            pass
 
-    except IOError as ioe:
-        # file not found
-        return render_template('data.html', name = name, data = None), 404
+    if request.method in {'POST'}:
 
-    except ValueError as ve:
-        # invalid JSON
-        app.logger.error(ve)
-        return ve.message, 400
+        # non-regressive validation
+        form.data.validators.append(forms.non_regressive(form.data.default))
+        
+        data = {field.name: field.data for field in form if field.name in DATA_STRUCTURE}
+
+        if form.validate_on_submit():
+            # archive it right away
+            with open(find_archive(name, form.ext.data, int(time())), 'w') as f:
+                json.dump(data, f, separators=(',', ':'))
+
+            # replace the main file
+            with open(find_data(name, form.ext.data), 'w') as f:	
+                json.dump(data, f, separators=(',', ':'))
+   
+    return render_template('data.html', name = name, form = form)
 
 @app.route('/data/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
 @jsonresponse
 def raw(name, ext):	
     if request.method in {'POST', 'PUT'}:
 
-        if not ext == 'json':
-            return 'Only JSON is supported as a posting format.', 400
+        form = forms.RawForm()
 
-	# write headers info
-        data = {}
+        data = {field.name: field.data for field in form if field.name in DATA_STRUCTURE}
 
-        data['time'] = int(time())
-        data['approvers'] = [request.remote_addr]
-        data['ip'] = request.remote_addr
-        data['license'] = request.form['license'] # string
-        data['sources'] = request.form.getlist('sources[]') # array of urls
-
-        try:
-            data['data'] = json.loads(request.form['data']) # json-encoded data
-        except ValueError as ve:
-            app.logger.error(ve)
-            return ve.message, 400
-        
-        form = forms.DataForm(request.form)
-        
-        # ensure retro-compatibility with current version
         with open(find_data(name, ext), 'r') as f:
-           form.data = wtforms.TextField('data', [wtforms.validators.Required(), forms.non_regressive(json.load(f))])
+            try:
+                form.data.validators.append(forms.non_regressive(json.load(f)))
+            except IOError as ioe:
+                # no data to validate against
+                app.logger.info(ioe)
 
-        if not form.validate():
-            return form, 400
+        if not form.validate_on_submit():
+            # return errors
+            return {field.name: field.errors for field in form}, 400
 
         # archive it right away
         with open(find_archive(name, ext, int(time())), 'w') as f:
@@ -187,8 +200,6 @@ def raw(name, ext):
         # replace the main file
         with open(find_data(name, ext), 'w') as f:	
             json.dump(data, f, separators=(',', ':'))
- 
-        return data
    
     try:
         with open(find_data(name, ext), 'r') as f:
@@ -269,6 +280,5 @@ def evolution(name):
     return render_template('evolution.html', name = name, evolution = evolution)
 		
 if __name__ == '__main__':
+    app.secret_key = 'ioiu8&((*/io0io@£¢rs9'
     app.run(debug = True)
-
-

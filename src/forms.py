@@ -1,7 +1,18 @@
-from wtforms import Form, TextField, StringField
-from wtforms.validators import Required, IPAddress
-import wtforms.validators
-import json
+from flask_wtf import Form
+from wtforms import TextField, StringField, FieldList, HiddenField, TextAreaField, SelectField, SubmitField, ValidationError
+from wtforms.validators import Required, IPAddress, URL, AnyOf, EqualTo
+from datapedia import find_data
+from json import loads, dumps
+
+def json():
+    """Creates a callback to validate a JSON field"""
+    def _json(form, field): 
+        try:
+            dumps(field.data)
+        except ValueError as ve:
+            raise ValidationError(ve)
+
+    return _json
 
 def non_regressive(reference):
     """
@@ -15,7 +26,7 @@ def non_regressive(reference):
         try:
             for key in reference: # throw a TypeError if not iterable
                 if key in field: # throw a TypeError if not iterable
-                    return non_regressive_JSON(form, reference[key])(field[key])
+                    return _non_regressive(form, reference[key])(field[key])
                 else: # a key is missing in the new data
                     raise ValidationError('{} is missing in the field {}.'.format(key, field))
 
@@ -25,8 +36,23 @@ def non_regressive(reference):
       
     return _non_regressive
 
-class DataForm(Form):
-    ip = Field('ip', [Required(), IPAddress()])
-    license = TextField('license', [Required()])
-    data = TextField('data', [Required(), NonRegressive()])
-    sources = Field('sources[]', [Required()])
+class RawForm(Form):
+    ip = HiddenField('ip', [Required(), IPAddress()])
+    license = SelectField('license', choices =  [
+        ('CC BY', 'Attribution'), 
+        ('CC BY-SA', 'Attribution-ShareAlike'),
+        ('CC BY-ND', 'Attribution-NoDerivs'),
+        ('CC BY-NC', 'Attribution-NonCommercial'),
+        ('CC BY-NC-SA', 'Attribution-NonCommercial-ShareAlike'),
+        ('CC BY-NC-ND', 'Attribution-NonCommercial-NoDerivs')
+    ])
+    sources = FieldList(TextField('sources', [URL()]), min_entries = 1)
+
+class DataForm(RawForm):
+    ext = SelectField('ext', choices = [
+        ('json', 'JSON'), 
+        ('xml', 'XML'),
+        ('yml', 'YAML')
+    ])
+    data = TextAreaField('data', [Required(), json()])
+    submit = SubmitField('submit')
