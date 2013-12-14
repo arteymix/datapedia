@@ -36,7 +36,7 @@
         </p>
         <p>
            <label>Edit data</label>
-           <textarea name="data">{{ data['data'] }}</textarea>
+           <textarea name="data">{{ data['data'] | tojson }}</textarea>
         </p>
         <p>
             <button type="submit">Save</button>
