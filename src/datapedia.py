@@ -20,108 +20,127 @@
 from flask import Flask, request, render_template, redirect, url_for
 from time import time
 from datetime import datetime
-from functools import wraps
-from itertools import izip_longest
+from difflib import HtmlDiff
 import wtforms
 import glob
 import md5
 import os
 import json
-import difflib
 
 import forms
+from decorators import detectresponse
 
 app = Flask(__name__)
 
 # Data structure in the data (set of required )
 DATA_STRUCTURE = {
-    'ip': str,
+    'ip': unicode,
     'time': int, 
-    'license': str, 
+    'license': unicode, 
     'approvers': list, 
     'sources': list,
     'data': object
 }
 
-def limit(iterable, count):
-    """
-    Limit number of iterated elements from an iterable.
-    count -- is the maximum number of elements to iterate through
-    """
-    while count > 0:
-        yield next(iterable)
-        count -= 1
+DATA_PATH = 'data'
 
-def find_data(name, ext):
-    """
-    Get the data path for a given name and ext.
-    """
+DATA_FOLDER_STRUCTURE = {
+    'current': {},
+    'approving': {},
+    'archive': {}
+}
 
-    return 'data/{}.{}'.format(name, ext)
+SUPPORTED_EXT = ['json']
 
-def find_archive(name, ext, time):
+EXT_STRING_LOADER = {
+    'json': lambda s: json.loads(s)
+}
+
+EXT_FILE_LOADER = {
+    'json': lambda f: json.load(f)
+}
+
+EXT_STRING_DUMPER = {
+    'json': lambda o: json.dumps(o, separators = (',', ':'))
+}
+
+EXT_FILE_DUMPER = {
+    'json': lambda o, f: json.dump(o, f, separators = (',', ':')),
+}
+
+def generate_folder_structure(destination, structure):
     """
-    Get the archive path for a given name, ext and time.
+    Recursively generate a data structure
+    destination -- folder path from which the structure will be generated
+    structure   -- dict defining the folder structure by its keys
     """
+    if not os.path.exists(destination):
+        os.mkdir(destination)
+
+    for folder in structure:
+        d = os.path.join(destination, folder)
+        if not os.path.exists(d):
+            os.mkdir(d)
+
+        generate_folder_structure(d, structure[folder])
+
+# enforce folder structure
+generate_folder_structure(DATA_PATH, DATA_FOLDER_STRUCTURE)
+
+def find_current(name, ext = None):
+    """
+    Find the path for a given name and extension
+    name -- str
+    ext  -- str if given, return the corresponding path, otherwise it will seek
+    for the path using SUPPORTED_EXT constant.
+    """
+    if ext == None:
+        for ext in SUPPORTED_EXT:
+            if os.path.exists(path = find_current(name, ext)):
+                return path
+ 
+        ext = SUPPORTED_EXT[0]
+
+    return os.path.join(DATA_PATH, 'current', '{}.{}'.format(name, ext))
+
+def find_timestamped(folder, name, ext = None, timestamp = time()):
+    """
+    Get the approving path for a given name, ext and time.
+    ext       -- str if not given, it will seek for it in 
+    timestamp -- int if not given, time() will be used
+    """
+    timestamp = str(int(timestamp))
+
     # make a directory in the archives
-    if not os.path.isdir('archives/{}.{}'.format(name, ext)):
-        os.mkdir('archives/{}.{}'.format(name, ext))
+    d = os.path.join(DATA_PATH, folder, '{}.{}'.format(name, ext))
 
-    return 'archives/{}.{}/{}'.format(name, ext, str(time))
+    if not os.path.exists(d):
+        os.mkdir(d)
 
-def jsonresponse(f):
-    """
-    Decorate an action to return a JSON format.
-    """
-    @wraps(f)
-    def wrapper(**args):
+    if ext == None:
+        for ext in SUPPORTED_EXT:
+            if os.path.exists(path = find_timestamped(name, ext, timestamp)):
+                return path
+
+        ext = SUPPORTED_EXT[0]
         
-        response = f(**args)
+    return os.path.join(d, timestamp)
 
-        body = response
-        code = 200
-        headers = {}
+def find_timestamped_latest(folder, name, ext = None, timestamp = time()):
+    """
+    Instead of seeking for a precise file, it will find the latest timestamped taking
+    the timestamp parameter as an upper bound. This answer the question: 
+    What was the data at <timestamp>?
+    """
+    timestamp = str(int(timestamp))
 
-        if type(response) == tuple:
+    # make a directory in the archives
+    d = os.path.join(DATA_PATH, folder, '{}.{}'.format(name, ext))
 
-            if len(response) == 2:
-                body, code = response
-
-            if len(response) == 3:
-                body, code, headers = response
-     
-        # convert python object to JSON
-        body = json.dumps(body, separators = (',', ':'))
-
-        headers['Content-Encoding'] = 'utf-8'
-        headers['Content-Type'] = 'application/json'
-        headers['Content-MD5'] = md5.new(body).hexdigest()
-        headers['Content-Length'] = len(body.encode('utf-8'))
-
-        return body, code, headers
-
-    return wrapper
-
-def xmlresponse(f, **xmlargs):
-    """Decorate an action to return an XML format."""
-
-    @wraps(f)
-    def wrapper(**args):
-        return f(**args)
-
-def ymlresponse(f):
-    """Decorate an action to return an YML format."""
-
-    @wraps(f)
-    def wrapper(**args):
-        return f(**args)
-
-# ensure archives and data folder exist
-if not os.path.exists('archives'):
-    os.mkdir('archives')
-
-if not os.path.exists('data'):
-    os.mkdir('data')
+def limit(iterator, count):
+    while count > 0:
+        yield next(iterator)
+        count -= 1
 
 @app.route('/')
 def datapedia():
@@ -129,7 +148,8 @@ def datapedia():
     Home page for datapedia.
     """
     search = request.args.get('search', '*')
-    results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob('data/' + search), 10)))
+    dest = os.path.join(DATA_PATH, 'current', search)
+    results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob(dest), 10)))
 
     example = {
         'time': int(time()), 
@@ -150,143 +170,142 @@ def about():
 def developers():
     return render_template('developers.html')
 
-@app.route('/data/<name>', methods = {'GET', 'POST'})
-def data(name):
+@app.route('/current/<name>', methods = {'GET', 'POST'})
+def current(name):
     """ 
     Present the data with an HTML template.
     """
+    data = {}
     form = forms.DataForm()
 
-    # load default data
     try:
-        with open(find_data(name, 'json'), 'r') as f:
-            data = json.load(f)
-            for field in form:
-                field.default = data.get(field.name)
+        with open(find_current(name, 'json'), 'r') as f:
+            data = EXT_FILE_LOADER['json'](f)
     except IOError:
             pass
 
-    if request.method in {'POST'}:
+    # load default data
+    for field in form:
+        field.default = data.get(field.name)
 
-        # non-regressive validation
-        form.data.validators.append(forms.non_regressive(form.data.default))
-        
-        data = {field.name: field.data for field in form if field.name in DATA_STRUCTURE}
+    if request.method in {'POST'}:
+        # non regressive to current data
+        form.data.validators.append(forms.NotRegressive(data.get('data')))
 
         if form.validate_on_submit():
+            data = {field.name: field.data for field in form if field.name in DATA_STRUCTURE}
+            data['ip'] = request.remote_addr
+            data['approvers'] = [request.remote_addr]
+            data['data'] = form.data.object_data
             # archive it right away
-            with open(find_archive(name, form.ext.data, int(time())), 'w') as f:
-                json.dump(data, f, separators=(',', ':'))
-
-            # replace the main file
-            with open(find_data(name, form.ext.data), 'w') as f:	
-                json.dump(data, f, separators=(',', ':'))
+            with open(find_timestamped('archive', name, form.ext.data), 'w') as a, \
+                open(find_current(name, form.ext.data), 'w') as f:
+                EXT_FILE_DUMPER[form.ext.data](data, f)
+                EXT_FILE_DUMPER[form.ext.data](data, a)
    
-    return render_template('data.html', name = name, form = form)
+    return render_template('data.html', name = name, data = data, form = form)
 
-@app.route('/data/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
-@jsonresponse
-def raw(name, ext):	
+@app.route('/current/<name>.<ext>', methods={'GET', 'POST', 'PUT'})
+@detectresponse
+def current_raw(name, ext):	
     if request.method in {'POST', 'PUT'}:
 
         form = forms.RawForm()
+        
+        try:
+            with open(find_current(name, ext), 'r') as f:
+                form.data.validators.append(forms.NotRegressive(json.load(f)))
+        except IOError as ioe:
+            pass
+
+        if not form.validate():
+            return {field.name: field.errors for field in form}, 400
 
         data = {field.name: field.data for field in form if field.name in DATA_STRUCTURE}
 
-        with open(find_data(name, ext), 'r') as f:
-            try:
-                form.data.validators.append(forms.non_regressive(json.load(f)))
-            except IOError as ioe:
-                # no data to validate against
-                app.logger.info(ioe)
+        data['ip'] = request.remote_addr
 
-        if not form.validate_on_submit():
-            # return errors
-            return {field.name: field.errors for field in form}, 400
-
-        # archive it right away
-        with open(find_archive(name, ext, int(time())), 'w') as f:
-            json.dump(data, f, separators=(',', ':'))
-
-        # replace the main file
-        with open(find_data(name, ext), 'w') as f:	
-            json.dump(data, f, separators=(',', ':'))
+        with open(find_timestamped('archive', name, ext, int(time())), 'w') as a, \
+            open(find_current(name, ext)) as f:
+            EXT_FILE_DUMPER[ext](a)
+            EXT_FILE_DUMPER[ext](f)
    
     try:
-        with open(find_data(name, ext), 'r') as f:
-            if ext == 'json':
-                return json.load(f)
-
-            if ext == 'xml':
-                return xml.parse(f)
-
-            if ext == 'yaml':
-                return yaml
+        with open(find_current(name, ext), 'r') as f:
+            EXT_FILE_LOADER[ext](f)
 
     except IOError as ioe:
-        app.logger.error(ioe)
         return ioe.message, 404
 
-@app.route('/approve/<name>.<ext>')
-def approve(name, ext):
-    with open(find_data(name, ext), 'r+') as f, \
-         open(find_archive(name, ext, int(time)), 'w') as a:
-        data = json.load(f)
+@app.route('/approve/<name>(/<int:timestamp>)')
+def approve(name, timestamp = None):
+    pass
+
+@app.route('/approve/<name>.<ext>(/<int:timestamp>)')
+def approve_raw(name, ext, timestamp = None):
+    """Approve an approving or current data"""
+    if time == None:
+        with open(find_current(name, ext), 'rw') as f:
+            data = EXT_FILE_LOADER[ext](f)
+            if request.remote_addr in data['approvers']:
+                return 'You have already approved this data.', 400
+
+            f.seek(0)
+            data['approvers'].append(request.remote_addr)
+            EXT_FILE_DUMPER[ext](data, f)
+
+            return redirect(url_for('current_raw', name = name, ext = ext))
+
+    with open(find_current(name, ext), 'r+') as f, \
+         open(find_timestamped('approving', name, ext, int(time)), 'w') as a:
+        data = EXT_FILE_LOADER[ext](f)
         f.seek(0)
         if not request.remote_addr in data['approvers']:
             data['approvers'].append(request.remote_addr)
-            json.dump(data, a, separators = (',', ':'))
-            json.dump(data, f, separators = (',', ':'))
+            EXT_FILE_DUMPER[ext](a)
+            EXT_FILE_DUMPER[ext](f)
     
     return redirect(url_for('raw', name = name, ext = ext))
 
-@app.route('/data/<name>.<ext>/<int:time>')
-@jsonresponse
-def archive(name, ext, time):
+@app.route('/<folder>/<name>.<ext>/<int:timestamp>')
+@detectresponse
+def timestamped(folder, name, ext, timestamp):
     """
-    Display a raw timestamped data.
+    Display a raw timestamped data from archive or approving folders.
     """
-    for f in (_ for _ in sorted(glob.iglob('archives/{}.{}/*'.format(name, ext))) if int(os.path.basename(_)) >= time):
+    path = os.path.join(DATA_PATH, folder, '{}.{}'.format(name, ext))
+
+    for f in (_ for _ in sorted(os.join(path, '*')) if int(os.path.basename(_)) >= time):
         with open(f) as f:
-            if ext == 'json':
-                return json.load(f)
-
-            if ext == 'xml':
-                pass
-
-            if ext == 'yml':
-                pass
+            return EXT_FILE_LOADER[ext](f)
 
     else:
-        return 'No result older than {} were found.'.format(str(time)), 404
+        return 'No result older than {} were found.'.format(str(timestamp)), 404
 
 @app.route('/evolution/<name>.<ext>')
-@jsonresponse
-def raw_evolution(name, ext):
+@detectresponse
+def evolution_raw(name, ext):
     evolution = []
-    for path in sorted(glob.iglob('archives/{}.{}/*'.format(name, ext))):
+    dest = os.path.join(DATA_PATH, 'archive', '{}.{}'.format(name, ext), '*')
+    for path in sorted(glob.iglob(dest)):
         with open(path, 'r') as f:
-            try:
-                evolution.append(json.load(f))
-            except ValueError as ve:
-                app.logger.error(ve)
+            evolution.append(EXT_FILE_LOADER[ext](f))
     
     return evolution
 
 @app.route('/evolution/<name>')
 def evolution(name):
+    htmldiff = HtmlDiff()
     evolution = []
     last_time = 0
     last_lines = []
-    for path in sorted(glob.iglob('archives/{}.json/*'.format(name))):
+    d = os.path.join(DATA_PATH, 'archive', '{}.{}'.format(name, 'json'), '*')
+    for path in sorted(glob.iglob(d)):
         with open(path, 'r') as f:
-            try:
-                lines = json.dumps(json.load(f), indent = 4, separators = (',', ': '), sort_keys = True).split("\n")
-                time = int(os.path.basename(path))
-                evolution.append(difflib.unified_diff(last_lines, lines, fromfiledate=datetime.fromtimestamp(last_time), tofiledate=datetime.fromtimestamp(time)))
-                last_time, last_lines = time, lines
-            except ValueError as ve: # happens when json objects cannot be decoded (corrupted files)
-                app.logger.error(ve)
+            lines = json.dumps(json.load(f), indent = 4, separators = (',', ': '), sort_keys = True).split("\n")
+            time = int(os.path.basename(path))
+            evolution.append(htmldiff.make_table(last_lines, lines, fromdesc=datetime.fromtimestamp(last_time), todesc=datetime.fromtimestamp(time)))
+            last_time, last_lines = time, lines
 
     return render_template('evolution.html', name = name, evolution = evolution)
 		

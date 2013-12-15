@@ -3,8 +3,29 @@
 {% block title %}Evolution of {{ name }} - {{ super() }}{% endblock %}
 
 {% block content %}
-    <h2>Evolution of <a href="{{ url_for('data', name = name) }}">{{ name }}</a> (<a href="{{ url_for('raw', name = name, ext = 'json') }}">json</a>)</h2>
+    <section class="row">
+        <div class="col-xs-12">           
+            <h2>Evolution of <a href="{{ url_for('current', name = name) }}">{{ name }}</a> (<a href="{{ url_for('current_raw', name = name, ext = 'json') }}">json</a>)</h2>
+            <p>Looking for the <a href="{{ url_for('evolution_raw', name = name, ext = 'json') }}">raw evolution</a> of {{ name }}?</p>
+        </div>
+    </section>
     {% for diff in evolution %}
-        <pre>{{ "\n".join(diff) }}</pre>
+        <section class="row">
+            <div class="col-xs-12">
+                {{ diff | safe }}
+            </div>
+        </section>
     {% endfor %}
+{% endblock %}
+
+{% block javascript %}
+    {{ super() }}
+    <script type="application/javascript">
+        (function($) {
+            $('table.diff').addClass('table table-condensed');
+            $('table.diff span.diff_chg').addClass('text-warning').parent().addClass('warning');
+            $('table.diff span.diff_add').addClass('text-success').parent().addClass('success');
+            $('table.diff span.diff_sub').addClass('text-danger').parent().addClass('danger');
+        })(jQuery);
+    </script>
 {% endblock %}

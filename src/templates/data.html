@@ -3,28 +3,29 @@
 {% block title %}{{ name }} - {{ super() }}{% endblock %}
 
 {% block content %}
-    <div class="container">
-        
-        <section class="row">
-            <div class="col-xs-12">
-                <h2>{{ name }}</h2>
-                <p>Check the <a href="{{ url_for('evolution', name = name)}}">evolution</a> over time.</p>
-                {% if data and not request.remote_addr in data['approvers'] %}<p><a href="{{ url_for('approve', name = name, ext = 'json') }}">Approve</a> these data.</p>{% endif %}
-            </div> 
-        </section>
-        
         <section class="row">
             
             <div class="col-xs-6">
-                <h3>View</h3>
-                <table class="table">
-                    {% for field in form %}
-                        <tr>
-                            <th>{{ field.name }}</th>
-                            <td><code>{{ field.default | tojson | safe }}</code></td>
-                        </tr>
-                    {% endfor %}
-                </table>
+                {% if data %}
+                    <h2>Quick overview of {{ name }}</h2>
+                    <p>Check the <a href="{{ url_for('evolution', name = name)}}">evolution</a> over time.</p>
+                    {% if not request.remote_addr in data['approvers'] %}
+                        <p><a href="{{ url_for('approve', name = name, ext = 'json') }}">Approve</a> these data.</p>
+                    {% else %}
+                        <p>You, <strong>{{ request.remote_addr }}</strong>, have already approved this data.</p>
+                    {% endif %}
+                    <table class="table">
+                        {% for key in data %}
+                            <tr>
+                                <th>{{ key }}</th>
+                                <td><code>{{ data[key] | tojson }}</code></td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                    <pre>{{ data | tojson }}</pre>
+                {% else %}
+                    <h2>How to create a new data entry</h2>
+                {% endif %}
             </div>
             <div class="col-xs-6">
                 <h3 id="edit">Edit</h3>
@@ -37,7 +38,7 @@
                             {% if field.errors %}
                                 <div class="help-block">
                                     {% for error in field.errors %}
-                                        <span>{{ error }}</span>
+                                        {{ error | e }}</br>
                                     {% endfor %}
                                 </div>
                             {% endif %}
@@ -46,5 +47,4 @@
                 </form>
             </div>
         </section>
-    </div>
 {% endblock %}

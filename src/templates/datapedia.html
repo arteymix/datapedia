@@ -5,8 +5,10 @@
             <title>{% block title %}Datapedia{% endblock %}</title>
             <meta name="description" content="{% block description %}Datapedia, the Wikipedia of data.{% endblock %}"/>
             <meta name="keywords" content="{% block keywords %}data{% endblock %}"/>
-            <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap.min.css') }}">
-            <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap-theme.min.css') }}">
+            {% block css %}
+                <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap.min.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap-theme.min.css') }}">
+            {% endblock %}
             <script type="application/javascript" src="{{ url_for('static', filename = 'js/jquery.min.js') }}"></script>
             <script type="application/javascript" src="{{ url_for('static', filename = 'js/bootstrap.min.js') }}"></script>
         {% endblock %}
@@ -29,16 +31,16 @@
                 </div>
             {% endblock %}
         </header>
-        {% block content %}
-            <div class="container">
+        <div class="container">
+            {% block content %}
                 <section class="row">
                     <div class="col-xs-12">
                         <h2>Results for {{ search }}</h2>
                         <ul>
                             {% for name, ext in results %}
                                 <li>
-                                    <a href="{{ url_for('data', name = name) }}">{{ name }}</a>
-                                    (<a href="{{ url_for('raw', name = name, ext = ext) }}">{{ ext }}</a>)
+                                    <a href="{{ url_for('current', name = name) }}">{{ name }}</a>
+                                    (<a href="{{ url_for('current_raw', name = name, ext = ext) }}">{{ ext }}</a>)
                                 </li>
                             {% else %}
                                 <li><a href="{{ url_for('data', name = search) }}">Create {{ search }}</a></li>
@@ -50,9 +52,17 @@
                 <section class="row">
                     <div class="col-xs-12">
                         <h2>How it works!</h2>
-                        <p>Datapedia is made out of data entities. Data entities can be requested in different format by specifiying an extension.</p>
-                        <p>The basic url is <code>data/{name}.{extension}</code> where the name can be anything and the extension, a supported format. If the extension is ommited, an friendly HTML template will presented.</p>
-                
+                        <ol>
+                            <li>Data is requested from an endpoint with a name and a format</li> 
+                            <li>We check if the data exists in the requested format</li>
+                            <li>If it exists, it is returned else it checks if the name exists in other format</li>
+                            <li>If it exists in another format, it is converted, cached and returned</li>
+                            <li>Otherwise, an error message is returned in the requested format along with a 404 HTTP code</li>
+                        </ol>
+                        <p>Data entities can be requested using their name and and an extension.</p>
+                        <p>On request, Datapedia will check if your data exists in the given format. If not, it will check if it exists in other supported formats, convert the foreign format, cache the result and return it. If it still not exists, then you will receive an error message with a HTTP 404 code.
+                        <p>If the extension is ommited, an friendly HTML template will presented.</p>
+                        <p>Yet, only JSON is supported.</p>           
                     </div>
                 </section>
                 
@@ -100,7 +110,7 @@
                         <pre></pre>
                         
                         <p>In YAML</p>
-                         <pre></pre>
+                        <pre></pre>
                     
                     </div>
                     
@@ -134,11 +144,23 @@
 
                         <p>A recursive algorithm walk into the data structure and ensure that types are preserved.<p>
 
-                        
                     </div>
                 </section>
-            </div>
-        {% endblock %}
+
+                <section>
+                    <div class="col-xs-12">
+                        <h2></h2>
+                        <p>This is an ajax example written in jQuery<p>
+                        
+                        <pre>{{ jquery_example }}</pre>
+                        
+                        <noscript><div class="alert">You must enable Javascript to see this example.</div></noscript>
+                        
+                        <div id="ajax-example"></div>
+                    </div>
+                </section>
+            {% endblock %}
+        </div>
         <footer>
             {% block footer %}
                 <div class="container">
@@ -147,5 +169,8 @@
                 </div>
             {% endblock %}
         </footer>
+        {%block javascript %}
+            <script type="application/javascript" src="{{ url_for('static', filename= 'js/ajax-example') }}"></script>
+        {% endblock %}
     </body>
 </html>
