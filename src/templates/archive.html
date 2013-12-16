@@ -1,8 +1,9 @@
 {% extends 'datapedia.html' %}
 
 {% block nav %}
+    {{ super() }}
     <ul class="nav navbar-nav">
-        <li><a href="{{ url_for('current', name = name) }}">Current</a></li>
+        <li><a href="{{ url_for('current', name = name) }}">{{ name }}</a></li>
         <li class="active"><a href="{{ url_for('archives', name = name) }}">Archives</a></li>
         <li><a href="{{ url_for('approvings', name = name) }}">Approvings</a></li>
     </ul>
@@ -10,6 +11,12 @@
 
 {% block content %}
     <h2>Archive of {{ name }} at {{ timestamp }}</h2>
-    <p>Check <a href="{{ url_for('current', name = name) }}">current</a> version of {{ name }}.</p>
-    <pre>{{ archive }}</pre>
+    <ul class="nav nav-pills">
+        <li class="active"><a href="{{ url_for('archive', name = name, timestamp = timestamp) }}">HTML</a></li>
+        {% for ext in config['SUPPORTED_EXT'] %}
+            <li><a href="{{ url_for('archive', name = name, ext = ext, timestamp = timestamp) }}">{{ ext | upper }}</a></li>
+        {% endfor %}
+    </ul>
+    <br/>
+    <pre class="prettyprint">{{ archive | toprettyjson }}</pre>
 {% endblock %}

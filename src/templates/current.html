@@ -3,8 +3,9 @@
 {% block title %}{{ name }} - {{ super() }}{% endblock %}
 
 {% block nav %}
+    {{ super() }}
     <ul class="nav navbar-nav">
-        <li class="active"><a href="{{ url_for('current', name = name) }}">Current</a></li>
+        <li class="active"><a href="{{ url_for('current', name = name) }}">{{ name }}</a></li>
         <li><a href="{{ url_for('archives', name = name) }}">Archives</a></li>
         <li><a href="{{ url_for('approvings', name = name) }}">Approvings</a></li>
     </ul>
@@ -16,8 +17,17 @@
             <div class="col-xs-6">
                 {% if data %}
                     <h2>Current {{ name }}</h2>
+                    
+                    <ul class="nav nav-pills">
+                        <li class="active"><a href="{{ url_for('current', name = name) }}">HTML</a></li>
+                        {% for ext in config['SUPPORTED_EXT'] %}
+                            <li><a href="{{ url_for('current', name = name, ext = ext) }}">{{ ext | upper }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    <br/>
+                    
                     {% if request.remote_addr in data['approvers'] %}
-                        <p>You, <strong>{{ request.remote_addr }}</strong>, have approved this data.</p>
+                        <div class="alert alert-success">You, <strong>{{ request.remote_addr }}</strong>, have approved this data.</div>
                     {% endif %}
                     <table class="table">
                         {% for key in data %}
@@ -27,7 +37,7 @@
                             </tr>
                         {% endfor %}
                     </table>
-                    <pre>{{ data | tojson }}</pre>
+                    <pre class="prettyprint">{{ data | toprettyjson }}</pre>
                 {% else %}
                     <h2>How to create a new data entry</h2>
                 {% endif %}

@@ -1,8 +1,9 @@
 from flask_wtf import Form
 from wtforms import TextField, StringField, FieldList, HiddenField, TextAreaField, SelectField, SubmitField, ValidationError
 from wtforms.validators import Required, IPAddress, URL, AnyOf, EqualTo
-from datapedia import SUPPORTED_EXT
+import datapedia
 import json
+from config import Config as config
 
 class JSONRequired():
     def __call__(self, form, field):
@@ -56,7 +57,7 @@ class CurrentForm(Form):
     ])
     sources = FieldList(TextField('sources', [URL()]), min_entries = 1)
     data = JSONTextAreaField('data', [JSONRequired()])
-    ext = SelectField('ext', choices = [(ext, ext) for ext in SUPPORTED_EXT])
+    ext = SelectField('ext', choices = [(ext, ext) for ext in config.SUPPORTED_EXT])
     submit = SubmitField('Submit')
 
 class ApprovingForm(Form):

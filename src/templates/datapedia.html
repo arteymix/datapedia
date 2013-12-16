@@ -8,12 +8,11 @@
             {% block css %}
                 <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap.min.css') }}">
                 <link rel="stylesheet" href="{{ url_for('static', filename = 'css/bootstrap-theme.min.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename = 'css/prettify.css') }}">
             {% endblock %}
-            <script type="application/javascript" src="{{ url_for('static', filename = 'js/jquery.min.js') }}"></script>
-            <script type="application/javascript" src="{{ url_for('static', filename = 'js/bootstrap.min.js') }}"></script>
         {% endblock %}
     </head>
-    <body>
+    <body onload="prettyPrint()">
         <nav class="navbar navbar-default" role="navigation">
             <div class="container">
                 <div class="navbar-header">
@@ -124,11 +123,11 @@
                         
                         <p>This is how data are stored internally</p>
                         
-                        <pre>{{ structure | pprint }}</pre>
+                        <pre class="prettyprint">{{ config['DATA_STRUCTURE'] | pprint }}</pre>
                         
                         <p>In JSON, it looks like</p>
                         
-                        <pre>{{ example | tojson }}</pre>
+                        <pre class="prettyprint">{{ example | tojson }}</pre>
                         
                         <h2>Guidelines for posting data</h2>
                         
@@ -188,7 +187,7 @@
                         <h2></h2>
                         <p>This is an ajax example written in jQuery<p>
                         
-                        <pre>{{ jquery_example }}</pre>
+                        <pre class="prettyprint">{{ jquery_example }}</pre>
                         
                         <noscript><div class="alert">You must enable Javascript to see this example.</div></noscript>
                         
@@ -200,12 +199,17 @@
         <footer>
             {% block footer %}
                 <div class="container">
-                    <p class="text-center">Datapedia source code is providen under GPLv3 here on <a href="https://github.com/arteymix/datapedia">GitHub</a>.</p>
-                    <p class="text-center"><a href="{{ url_for('about') }}">About Datapedia</a></p>
+                    <p class="text-center">Datapedia source code is providen under GPLv3.</p>
+                    <p class="text-center">
+                        <a href="https://github.com/arteymix/datapedia">Source</a> — <a href="https://github.com/arteymix/datapedia/issues">Report a bug</a> — <a href="{{ url_for('about') }}">About</a>
+                    </p>
                 </div>
             {% endblock %}
         </footer>
         {%block javascript %}
+            <script type="application/javascript" src="{{ url_for('static', filename = 'js/jquery.min.js') }}"></script>
+            <script type="application/javascript" src="{{ url_for('static', filename = 'js/bootstrap.min.js') }}"></script>
+            <script type="application/javascript" src="{{ url_for('static', filename = 'js/prettify.js') }}"></script>
             <script type="application/javascript" src="{{ url_for('static', filename= 'js/ajax-example') }}"></script>
         {% endblock %}
     </body>

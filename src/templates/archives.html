@@ -3,8 +3,9 @@
 {% block title %}Archives of {{ name }} - {{ super() }}{% endblock %}
 
 {% block nav %}
+    {{ super() }}
     <ul class="nav navbar-nav">
-        <li><a href="{{ url_for('current', name = name) }}">Current</a></li>
+        <li><a href="{{ url_for('current', name = name) }}">{{ name }}</a></li>
         <li class="active"><a href="{{ url_for('archives', name = name) }}">Archives</a></li>
         <li><a href="{{ url_for('approvings', name = name) }}">Approvings</a></li>
     </ul>
@@ -14,6 +15,12 @@
     <section class="row">
         <div class="col-xs-12">           
             <h2>Archives of {{ name }}</h2>
+            <ul class="nav nav-pills">
+                <li class="active"><a href="{{ url_for('archives', name = name) }}">HTML</a></li>
+                {% for ext in config['SUPPORTED_EXT'] %}
+                    <li><a href="{{ url_for('archives', name = name, ext = ext) }}">{{ ext | upper }}</a></li>
+                {% endfor %}
+            </ul>
         </div>
     </section>
     {% for timestamp in archives %}
