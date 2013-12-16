@@ -168,8 +168,23 @@ def about():
 def current(name, ext = None):
     """"""
     form = forms.CurrentForm()
+     
+    if request.method == 'PUT':
+        if os.exists(find_current(name, ext if ext else request.form['ext'])):
+            return 'Cannot call PUT, there is already a data at this endpoint.', 400
 
-    if request.method in {'POST', 'PUT'}:
+        if form.validate_on_submit():
+            data = {field.name: field.data for field in form if field.name in app.config['DATA_STRUCTURE']}
+            data['ip'] = request.remote_addr
+            data['approvers'] = [request.remote_addr]
+            data['data'] = form.data.object_data
+
+            timestamp = int(time())
+
+            with open(find_timestamped('current', name, form.ext.data, timestamp), 'w') as f:
+                app.config['FILE_ENCODER'][form.ext.data](data, f)
+
+    if request.method == 'POST':
         # non regressive to current data
         try:
             with open(find_current(name), 'r') as f:
@@ -177,7 +192,10 @@ def current(name, ext = None):
                 form.data.validators.append(forms.NotRegressive(d))
 
         except IOError:
-            pass
+            if ext:
+                return ioe.message, 404
+
+            return render_template('404.html'), 404
 
         if form.validate_on_submit():
             data = {field.name: field.data for field in form if field.name in app.config['DATA_STRUCTURE']}
