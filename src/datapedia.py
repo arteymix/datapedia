@@ -106,7 +106,7 @@ def find_timestamped(folder, name, ext = None, timestamp = time()):
     """
     timestamp = str(int(timestamp))
 
-    if not exte:
+    if not ext:
         for ext in SUPPORTED_EXT:
             path = find_timestamped(folder, name, ext, timestamp)
             if os.path.exists(path):
@@ -161,8 +161,21 @@ def datapedia():
     """
     Home page for datapedia.
     """
-    search = request.args.get('search', '*')
-    dest = os.path.join(DATA_PATH, 'current', search)
+    search = request.args.get('search', '')
+    dest = os.path.join(DATA_PATH, 'current', search if search else '*')
+
+    # check if it matches exactly an entry
+    name, ext = os.path.splitext(search)
+    
+    if not ext:
+       ext = None
+    else:
+       ext = ext[1:]
+
+    path = find_current(name, ext)
+    if os.path.exists(path):
+        return redirect(url_for('current', name = name, ext = ext))
+
     results = ((name, ext[1:]) for (name, ext) in (os.path.splitext(os.path.basename(path)) for path in limit(glob.iglob(dest), 10)))
 
     example = {
@@ -226,7 +239,7 @@ def current(name, ext = None):
     if ext:
         return data
 
-    return render_template('data.html', name = name, data = data, form = form)
+    return render_template('current.html', name = name, data = data, form = form)
 
 @app.route('/approving/<name>/<int:timestamp>', methods = {'GET', 'POST'}, defaults = {'ext': None})
 @app.route('/approving/<name>.<ext>/<int:timestamp>', methods = {'GET', 'POST'})
@@ -297,7 +310,7 @@ def approvings(name, ext, timestamp):
 def archive(name, ext, timestamp):
     try:
         with open(find_timestamped_latest('archive', name, ext, timestamp)) as f:
-            data = EXT_FILE_LOADER[ext if ext else SUPPORTED_FORMAT[0]](f)
+            data = EXT_FILE_LOADER[ext if ext else SUPPORTED_EXT[0]](f)
 
             if ext:
                 return data
@@ -319,7 +332,7 @@ def archives(name, ext, timestamp = 0):
         return archives
 
     htmldiff = HtmlDiff()
-    archives = []
+    archives = {}
     last_time = 0
     last_lines = []
     d = os.path.join(DATA_PATH, 'archive', '{}.{}'.format(name, 'json'), '*')
@@ -327,7 +340,7 @@ def archives(name, ext, timestamp = 0):
         with open(path, 'r') as f:
             lines = json.dumps(json.load(f), indent = 4, separators = (',', ': '), sort_keys = True).split("\n")
             time = int(os.path.basename(path))
-            archives.append(htmldiff.make_table(last_lines, lines, fromdesc=datetime.fromtimestamp(last_time), todesc=datetime.fromtimestamp(time)))
+            archives[time] = htmldiff.make_table(last_lines, lines, fromdesc=datetime.fromtimestamp(last_time), todesc=datetime.fromtimestamp(time))
             last_time, last_lines = time, lines
 
     return render_template('archives.html', name = name, archives = archives)

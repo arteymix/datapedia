@@ -1,5 +1,13 @@
 {% extends 'datapedia.html' %}
 
+{% block nav %}
+    <ul class="nav navbar-nav">
+        <li><a href="{{ url_for('current', name = name) }}">Current</a></li>
+        <li><a href="{{ url_for('archives', name = name) }}">Archives</a></li>
+        <li class="active"><a href="{{ url_for('approvings', name = name) }}">Approvings</a></li>
+    </ul>
+{% endblock %}
+
 {% block content %}
     <section class="row">
         <div class="col-xs-12">
@@ -9,9 +17,8 @@
     {% for timestamp in approvings %}
         <section class="row">
             <div class="col-xs-12">
-                <h3>{{ timestamp }}</h3>
+                <h3><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">{{ timestamp }}</a></h3>
                 <pre>{{ approvings[timestamp] | tojson }}</pre>
-                <p><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">Check this approving data</a>.</p>
             </div>
         </section>
     {% endfor %}

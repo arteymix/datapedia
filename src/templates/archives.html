@@ -1,18 +1,26 @@
 {% extends 'datapedia.html' %}
 
-{% block title %}Evolution of {{ name }} - {{ super() }}{% endblock %}
+{% block title %}Archives of {{ name }} - {{ super() }}{% endblock %}
+
+{% block nav %}
+    <ul class="nav navbar-nav">
+        <li><a href="{{ url_for('current', name = name) }}">Current</a></li>
+        <li class="active"><a href="{{ url_for('archives', name = name) }}">Archives</a></li>
+        <li><a href="{{ url_for('approvings', name = name) }}">Approvings</a></li>
+    </ul>
+{% endblock %}
 
 {% block content %}
     <section class="row">
         <div class="col-xs-12">           
-            <h2>Evolution of <a href="{{ url_for('current', name = name) }}">{{ name }}</a> (<a href="{{ url_for('current', name = name, ext = 'json') }}">json</a>)</h2>
-            <p>Looking for the <a href="{{ url_for('archives', name = name, ext = 'json') }}">raw evolution</a> of {{ name }}?</p>
+            <h2>Archives of {{ name }}</h2>
         </div>
     </section>
-    {% for diff in archives %}
+    {% for timestamp in archives %}
         <section class="row">
             <div class="col-xs-12">
-                {{ diff | safe }}
+                <h3><a href="{{ url_for('archive', name = name, timestamp = timestamp) }}">{{ name }} at {{ timestamp }}</a></h3>
+                {{ archives[timestamp] | safe }}
             </div>
         </section>
     {% endfor %}

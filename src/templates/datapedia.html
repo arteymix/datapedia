@@ -14,6 +14,19 @@
         {% endblock %}
     </head>
     <body>
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="{{ url_for('datapedia') }}">Datapedia</a>
+                </div>
+                {% block nav %}{% endblock %}
+                <form class="navbar-form navbar-right" action="{{ url_for('datapedia') }}">
+                    <div class="form-group">
+                        <input class="form-control" type="search" name="search" value="{{ search }}" placeholder="Search Datapedia"/>
+                    </div>
+                </form>
+            </div>
+        </nav>
         <header>
             {% block header %}
                 <div class="container">
@@ -22,10 +35,7 @@
                         <h1><a href="/">Datapedia</a></h1>
                         <p>Welcome to Datapedia, the <a href="http://wikipedia.org">Wikipedia</a> of data!</p>
                         <p>Search use <a href="http://docs.python.org/3.3/library/fnmatch.html#module-fnmatch">fnmatch syntax</a> for searches with a limit of 10 results.</p>
-                        <form action="{{ url_for('datapedia') }}">
-                            <input type="search" name="search" value="{{ search }}"/>
-                            <button type="submit">Search</button>
-                        </form>
+                        
                     </div>
                     </div>
                 </div>
@@ -35,7 +45,11 @@
             {% block content %}
                 <section class="row">
                     <div class="col-xs-12">
-                        <h2>Results for {{ search }}</h2>
+                        {% if search %}
+                            <h2>Results for {{ search }}</h2>
+                        {% else %}
+                            <h2>Top data</h2>
+                        {% endif %}
                         <ul>
                             {% for name, ext in results %}
                                 <li>
