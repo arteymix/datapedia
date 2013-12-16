@@ -1,0 +1,18 @@
+{% extends 'datapedia.html' %}
+
+{% block content %}
+    <section class="row">
+        <div class="col-xs-12">
+            <h2>Awaiting approvements for {{ name }}{% if timestamp > 0 %} since {{ timestamp }}{% endif %}</h2>
+        </div>
+    </section>
+    {% for timestamp in approvings %}
+        <section class="row">
+            <div class="col-xs-12">
+                <h3>{{ timestamp }}</h3>
+                <pre>{{ approvings[timestamp] | tojson }}</pre>
+                <p><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">Check this approving data</a>.</p>
+            </div>
+        </section>
+    {% endfor %}
+{% endblock %}

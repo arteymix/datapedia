@@ -5,11 +5,11 @@
 {% block content %}
     <section class="row">
         <div class="col-xs-12">           
-            <h2>Evolution of <a href="{{ url_for('current', name = name) }}">{{ name }}</a> (<a href="{{ url_for('current_raw', name = name, ext = 'json') }}">json</a>)</h2>
-            <p>Looking for the <a href="{{ url_for('evolution_raw', name = name, ext = 'json') }}">raw evolution</a> of {{ name }}?</p>
+            <h2>Evolution of <a href="{{ url_for('current', name = name) }}">{{ name }}</a> (<a href="{{ url_for('current', name = name, ext = 'json') }}">json</a>)</h2>
+            <p>Looking for the <a href="{{ url_for('archives', name = name, ext = 'json') }}">raw evolution</a> of {{ name }}?</p>
         </div>
     </section>
-    {% for diff in evolution %}
+    {% for diff in archives %}
         <section class="row">
             <div class="col-xs-12">
                 {{ diff | safe }}

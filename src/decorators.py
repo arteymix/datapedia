@@ -6,16 +6,20 @@ def detectresponse(f):
     """Detect response type to apply by looking at the ext attribute"""
     @wraps(f)
     def wrapper(**args):
-        ext = args['ext']
 
-        if ext == 'json':
-            return jsonresponse(f)(**args)
+        if 'ext' in args:
+            ext = args['ext']
 
-        if ext == 'xml':
-            return xmlresponse(f)(**args)
+            if ext == 'json':
+                return jsonresponse(f)(**args)
 
-        if ext == 'yaml':
-            return yamlresponse(f)(**args)
+            if ext == 'xml':
+                return xmlresponse(f)(**args)
+
+            if ext == 'yaml':
+                return yamlresponse(f)(**args)
+
+        return f(**args)
 
     return wrapper
 

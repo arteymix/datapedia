@@ -40,10 +40,10 @@
                             {% for name, ext in results %}
                                 <li>
                                     <a href="{{ url_for('current', name = name) }}">{{ name }}</a>
-                                    (<a href="{{ url_for('current_raw', name = name, ext = ext) }}">{{ ext }}</a>)
+                                    (<a href="{{ url_for('current', name = name, ext = ext) }}">{{ ext }}</a>)
                                 </li>
                             {% else %}
-                                <li><a href="{{ url_for('data', name = search) }}">Create {{ search }}</a></li>
+                                <li><a href="{{ url_for('current', name = search) }}">Create {{ search }}</a></li>
                             {% endfor %}
                         </ul>
                     <div>
@@ -51,43 +51,53 @@
                 
                 <section class="row">
                     <div class="col-xs-12">
-                        <h2>How it works!</h2>
-                        <ol>
-                            <li>Data is requested from an endpoint with a name and a format</li> 
-                            <li>We check if the data exists in the requested format</li>
-                            <li>If it exists, it is returned else it checks if the name exists in other format</li>
-                            <li>If it exists in another format, it is converted, cached and returned</li>
-                            <li>Otherwise, an error message is returned in the requested format along with a 404 HTTP code</li>
-                        </ol>
-                        <p>Data entities can be requested using their name and and an extension.</p>
-                        <p>On request, Datapedia will check if your data exists in the given format. If not, it will check if it exists in other supported formats, convert the foreign format, cache the result and return it. If it still not exists, then you will receive an error message with a HTTP 404 code.
-                        <p>If the extension is ommited, an friendly HTML template will presented.</p>
-                        <p>Yet, only JSON is supported.</p>           
-                    </div>
-                </section>
-                
-              
-                
-                
-                <section class="row">
-                    <div class="col-xs-12">
                     
                         <h2>End points</h2>
-                        <table class="table">
+                        <table class="table table-bordered">
                             <tr>
-                                <td><code>data/{name}.{ext}</code></td>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                                <th>HTTP specifications</th>
+
+                            </tr>
+                            <tr>
+                                <td><code>current/{name}.{ext}</code></td>
+                                <td>Current data with name <code>{name}</code> in the <code>{ext}</code> format.</td>
                                 <td>GET, POST or PUT</td>
-                                <td><code>{ext}</code> is one of the supported format</td>
                             </tr>
                             <tr>
-                                <td><code>data/{name}.{ext}/{time}</code></td>
+                                <td><code>archive/{name}.{ext}/{timestamp}</code></td>
+                                <td>
+                                    <p>Archived data with name <code>{name}</code> at the time <code>{timestamp}</code> in the <code>{ext}</code> format.</p>
+                                    <code>{timestamp}</code> is optional.
+                                </td>
                                 <td>GET</td>
-                                <td><code>{time}</code> is the number of second since january 19 1970</td>
-                            <tr>
-                                <td><code>evolution/{name}.{ext}</code></td>
-                                <td>GET</td>
-                                <td><code>{time}</code> is the number of second since january 19 1970</td>
+
                             </tr>
+                            <tr>
+                                <td><code>archives/{name}.{ext}/{timestamp}</code></td>
+                                <td>
+                                    <p>Archives of data with name <code>{name}</code> since the time <code>{timestamp}</code> in the <code>{ext}</code> format.</p>
+                                    <code>{timestamp}</code> is optional.
+                                </td>
+                                <td>GET</td>
+
+                            </tr>
+                            <tr>
+                                <td><code>approving/{name}.{ext}/{timestamp}</code></td>
+                                <td>Data awaiting for approvement with name <code>{name}</code> at the time <code>{timestamp}</code> in the <code>{ext}</code> format.</td>
+                                <td>GET, POST</td>
+                            </tr>
+                            <tr>
+                                <td><code>approvings/{name}.{ext}/{timestamp}</code></td>
+                                <td>
+                                    <p>Datas awaiting for approvements with name <code>{name}</code> since the time <code>{timestamp}</code> in the <code>{ext}</code> format.</p>
+                                    <code>{timestamp}</code> is optional.
+                                </td>
+                                <td>GET</td>
+
+                            </tr>
+                            
                         </table>
                     </div>
                 </section>
@@ -106,12 +116,22 @@
                         
                         <pre>{{ example | tojson }}</pre>
                         
-                        <p>In XML</p>
-                        <pre></pre>
+                        <h2>Guidelines for posting data</h2>
                         
-                        <p>In YAML</p>
-                        <pre></pre>
-                    
+                        <h3>JSON</h3>
+                        <h4>Object</h4>
+                        <p>Object keys should be simple, preferably one-worded and inflected on the type of what they designate.</p>
+
+                        <table class="table">
+                            <tr>
+                                <td>Refeering an array</td>
+                                <td><code>{items: [item1, item2, item3]}</code></td>
+                            </tr>
+                            <tr>
+                                <td>Refeering a single value</td>
+                                <td><code>{item: value}</code></td>
+                            </tr>
+                        </table>
                     </div>
                     
                     <div class="col-xs-6">
@@ -144,6 +164,8 @@
 
                         <p>A recursive algorithm walk into the data structure and ensure that types are preserved.<p>
 
+                        <h2>Data approvement</h2>
+                        <p>In order to have a good data collection, it is essential to have approvements. The approvement system is anonymous and based on ip address.</p>
                     </div>
                 </section>
 

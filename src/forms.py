@@ -34,7 +34,7 @@ class NotRegressive(object):
 
         # look further for known iterable
         if type(reference) in {list, dict, set}:
-            for key in self.reference:
+            for key in reference:
                 if key in data:
                     self._not_regressive(reference[key], data[key])
                 else:
@@ -45,7 +45,7 @@ class NotRegressive(object):
 
 not_regressive = NotRegressive
 
-class RawForm(Form):
+class CurrentForm(Form):
     license = SelectField('license', choices =  [
         ('CC BY', 'Attribution'), 
         ('CC BY-SA', 'Attribution-ShareAlike'),
@@ -56,7 +56,9 @@ class RawForm(Form):
     ])
     sources = FieldList(TextField('sources', [URL()]), min_entries = 1)
     data = JSONTextAreaField('data', [JSONRequired()])
-
-class DataForm(RawForm):
     ext = SelectField('ext', choices = [(ext, ext) for ext in SUPPORTED_EXT])
-    submit = SubmitField('submit')
+    submit = SubmitField('Submit')
+
+class ApprovingForm(Form):
+    """Form for approving a data"""
+    submit = SubmitField('Approve')
