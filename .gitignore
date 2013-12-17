@@ -1,6 +1,7 @@
 *~
 .*
 *.pyc
+*.egg-info/**
 
 archives/**
 data/**

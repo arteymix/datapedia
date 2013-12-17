@@ -25,7 +25,8 @@ class NotRegressive(object):
     def __init__(self, reference):
         self.reference = reference
 
-    def _not_regressive(self, reference, data):
+    @staticmethod
+    def _not_regressive(reference, data):
         """Makes recursion cleaner"""
         if reference is None:
             return
@@ -34,12 +35,19 @@ class NotRegressive(object):
             raise ValidationError(u'type {} of {} changed to {} of {}.'.format(type(reference), reference, type(data), data))
 
         # look further for known iterable
-        if type(reference) in {list, dict, set}:
+        if type(reference) == dict:
             for key in reference:
                 if key in data:
-                    self._not_regressive(reference[key], data[key])
+                    NotRegressive._not_regressive(reference[key], data[key])
                 else:
-                    raise ValidationError(u'{} is missing in {}.'.format(key, data))
+                    raise ValidationError(u'key {} is missing in {}.'.format(key, data))
+
+        if type(reference) == list:
+            for index, value in enumerate(reference):
+                if index >= len(data):
+                    raise ValidationError(u'index {} is missing in {}.'.format(index, data))
+
+                NotRegressive._not_regressive(reference[index], data[index])
 
     def __call__(self, form, field):
         self._not_regressive(self.reference, field.object_data)
@@ -62,4 +70,5 @@ class CurrentForm(Form):
 
 class ApprovingForm(Form):
     """Form for approving a data"""
+    ext = HiddenField('ext', default = config.SUPPORTED_EXT[0])
     submit = SubmitField('Approve')

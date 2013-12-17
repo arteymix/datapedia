@@ -11,7 +11,7 @@
 {% block content %}
     <section class="row">
         <div class="col-xs-12">
-            <h2>Awaiting approvements for {{ name }}{% if timestamp > 0 %} since {{ timestamp }}{% endif %}</h2>
+            <h2>Awaiting approvements for {{ name }}</h2>
             <ul class="nav nav-pills">
                 <li class="active"><a href="{{ url_for('approvings', name = name) }}">HTML</a></li>
                 {% for ext in config['SUPPORTED_EXT'] %}
@@ -23,7 +23,7 @@
     {% for timestamp in approvings %}
         <section class="row">
             <div class="col-xs-12">
-                <h3><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">{{ name }} proposed at {{ timestamp }}</a></h3>
+                <h3><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">{{ name }} proposed at {{ timestamp | todatetime }}</a></h3>
                 <pre class="prettyprint">{{ approvings[timestamp] | toprettyjson }}</pre>
             </div>
         </section>

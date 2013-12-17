@@ -21,9 +21,9 @@ from flask import Flask, request, render_template, redirect, url_for
 from time import time
 from datetime import datetime
 from difflib import HtmlDiff
+from httplib import responses, METHOD_NOT_ALLOWED, BAD_REQUEST, NOT_FOUND
 import wtforms
 import glob
-import md5
 import os
 import json
 
@@ -31,7 +31,6 @@ import forms
 from decorators import detectresponse
 
 app = Flask(__name__)
-
 
 def generate_folder_structure(destination, structure):
     """
@@ -116,10 +115,27 @@ def limit(iterator, count):
     while count > 0:
         yield next(iterator)
         count -= 1
+        
+@app.template_filter('type')
+def _type(obj):
+    return type(obj)
 
 @app.template_filter('toprettyjson')
 def toprettyjson(obj):
     return json.dumps(obj, separators = (', ', ': '),indent = 4)
+
+@app.template_filter('tohttpstatus')
+def tohttpstatus(code):
+    """Return the HTTP status related to a given code"""
+    return responses[code]
+
+@app.template_filter('todatetime')
+def todatetime(time):
+    return datetime.fromtimestamp(float(time))
+
+@app.template_filter('todate')
+def todate(time):
+    return datetime.date.fromtimestamp(float(time))
 
 @app.before_first_request
 def before_first_request():
@@ -169,33 +185,30 @@ def current(name, ext = None):
     """"""
     form = forms.CurrentForm()
      
-    if request.method == 'PUT':
-        if os.exists(find_current(name, ext if ext else request.form['ext'])):
-            return 'Cannot call PUT, there is already a data at this endpoint.', 400
+    if request.method in {'POST', 'PUT'}:
+        # resource must not exist if it's a PUT
+        if request.method == 'PUT' and os.exists(find_current(name, ext if ext else form.ext.data)):
+            message = 'Cannot call PUT, there is already a data at this endpoint.'
 
-        if form.validate_on_submit():
-            data = {field.name: field.data for field in form if field.name in app.config['DATA_STRUCTURE']}
-            data['ip'] = request.remote_addr
-            data['approvers'] = [request.remote_addr]
-            data['data'] = form.data.object_data
-
-            timestamp = int(time())
-
-            with open(find_timestamped('current', name, form.ext.data, timestamp), 'w') as f:
-                app.config['FILE_ENCODER'][form.ext.data](data, f)
-
-    if request.method == 'POST':
-        # non regressive to current data
-        try:
-            with open(find_current(name), 'r') as f:
-                d = app.config['FILE_DECODER'][ext if ext else request.form['ext']](f)['data']
-                form.data.validators.append(forms.NotRegressive(d))
-
-        except IOError:
             if ext:
-                return ioe.message, 404
+                return message, METHOD_NOT_ALLOWED
+       
+            return render_template('error.html', message = message, code = METHOD_NOT_ALLOWED), METHOD_NOT_ALLOWED
 
-            return render_template('404.html'), 404
+        if request.method == 'POST':
+            # non regressive to current data
+            try:
+                with open(find_current(name, ext if ext else form.ext.data), 'r') as f:
+                    d = app.config['FILE_DECODER'][ext if ext else form.ext.data](f)['data']
+                    form.data.validators.append(forms.NotRegressive(d))
+ 
+            except:
+                message = 'Cannot call POST, there no data at this endpoint.'
+
+                if ext:
+                    return message, METHOD_NOT_ALLOWED
+
+                return render_template('error.html', code = METHOD_NOT_ALLOWED, message = message), METHOD_NOT_ALLOWED
 
         if form.validate_on_submit():
             data = {field.name: field.data for field in form if field.name in app.config['DATA_STRUCTURE']}
@@ -205,19 +218,31 @@ def current(name, ext = None):
 
             timestamp = int(time())
 
-            with open(find_timestamped('approving', name, form.ext.data, timestamp), 'w') as f:
-                app.config['FILE_ENCODER'][form.ext.data](data, f)
+            if request.method == 'PUT':
+                with open(find_current(name, ext if ext else form.ext.data), 'w') as f:
+                    app.config['FILE_ENCODER'][ext if ext else form.ext.data](data, f)
+        
+            if request.method == 'POST':
+                timestamp = int(time())
 
-            return redirect(url_for('approving', name = name, ext = ext, timestamp = timestamp))             
+                # mark data for approvement
+                with open(find_timestamped('approving', name, ext if ext else form.ext.data, timestamp), 'w') as f:
+                    app.config['FILE_ENCODER'][ext if ext else form.ext.data](data, f)
+
+                return redirect(url_for('approving', name = name, ext = ext, timestamp = timestamp))             
+
+        elif ext:
+            return {field.name: field.errors for field in form}, BAD_REQUEST
+
     data = None
 
     try:
         with open(find_current(name, ext), 'r') as f:
-            data = app.config['FILE_DECODER'][ext if ext else 'json'](f)
+            data = app.config['FILE_DECODER'][ext if ext else app.config['SUPPORTED_EXT'][0]](f)
 
     except IOError as ioe:
         if ext:
-            return ioe.message, 404
+            return 'There is no data at this endpoint.', METHOD_NOT_ALLOWED
     
     if ext:
         return data
@@ -228,83 +253,81 @@ def current(name, ext = None):
 @app.route('/approving/<name>.<ext>/<int:timestamp>', methods = {'GET', 'POST'})
 @detectresponse
 def approving(name, ext, timestamp):
-    approving = None
+    form = forms.ApprovingForm()
 
     try:
-        with open(find_timestamped('approving', name, ext, timestamp), 'r') as a:
-            approving = app.config['FILE_DECODER'][ext if ext else app.config['SUPPORTED_EXT'][0]](a)
-    except IOError as ioe:
-        if ext:
-            return ioe.message, 404
+        with open(find_timestamped('approving', name, ext if ext else form.ext.data, timestamp), 'r') as a:
+            approving = app.config['FILE_DECODER'][ext if ext else form.ext.data](a)
+    except IOError:
+        message = 'There is no data at this endpoint.'
 
-        return render_template('404.html'), 404
+        if ext:
+            return message, NOT_FOUND
+
+        return render_template('error.html', code = NOT_FOUND, message = message), NOT_FOUND
 
     if request.method == 'POST':
-        # user might have providen an ext, so we update approving
-        with open(find_timestamped('approving', name, ext, timestamp), 'r') as a:
-            approving = app.config['FILE_DECODER'][ext if ext else request.form['ext']](a)
 
-        form = forms.ApprovingForm()
+        # user might have providen an ext, so we update approving
+        with open(find_timestamped('approving', name, ext if ext else form.ext.data, timestamp), 'r') as a:
+            approving = app.config['FILE_DECODER'][ext if ext else form.ext.data](a)
 
         if not request.remote_addr in approving['approvers']:
             approving['approvers'].append(request.remote_addr)
 
         if form.validate():
             # update approving
-            with open(find_timestamped('approving', name, ext, timestamp), 'w') as a:
-                app.config['FILE_ENCODER'](approving, a)
+            with open(find_timestamped('approving', name, ext if ext else form.ext.data, timestamp), 'w') as a:
+                app.config['FILE_ENCODER'][ext if ext else form.ext.data](approving, a)
 
             try:
-                with open(find_current(name, ext), 'rw') as c, open(find_timestamped('archive', name, ext))as a:
-                    current = app.config['FILE_DECODER'][ext if ext else request.form['ext']](c)
+                with open(find_current(name, ext), 'r') as c:
+                    current = app.config['FILE_DECODER'][ext if ext else form.ext.data](c)
                     
-                    if approving['approvers'] > current['approvers']:
-                        # rewind current
-                        c.seek(0)
-
+                if len(approving['approvers']) > len(current['approvers']):
+                    with open(find_current(name, ext), 'w') as c, open(find_timestamped('archive', name, ext), 'w')as a:
                         # write to archive and replace current
-                        app.config['FILE_ENCODER'][ext if ext else request.form['ext']](approving, a)
-                        app.config['FILE_ENCODER'][ext if ext else request.form['ext']](approving, c)
+                        app.config['FILE_ENCODER'][ext if ext else form.ext.data](approving, a)
+                        app.config['FILE_ENCODER'][ext if ext else form.ext.data](approving, c)
 
-                        # remove approving
-                        a.close()
-                        os.remove(find_timestamped('approving', name, ext, timestamp))
+                    # remove approving
+                    os.remove(find_timestamped('approving', name, ext if ext else form.ext.data, timestamp))
 
-                        return redirect(url_for('current', name, ext))
+                    return redirect(url_for('current', name = name, ext = ext))
 
             except IOError:
                 # no current found, write it
                 with open(find_current(name, ext), 'w') as c,  open(find_timestamped('archive', name, ext), 'w'):
-                    app.config['FILE_ENCODER'][ext if ext else request.form['ext']](approving, a)
-                    app.config['FILE_ENCODER'][ext if ext else request.form['ext']](approving, c)
+                    app.config['FILE_ENCODER'][ext if ext else form.ext.data](approving, a)
+                    app.config['FILE_ENCODER'][ext if ext else form.ext.data](approving, c)
                     os.remove(find_timestamped('approving', name, ext, timestamp))
   
                     return redirect(url_for('current', name, ext))
+    elif ext:
+        return {field.name: field.errors for field in form}, BAD_REQUEST
 
     if ext:
         return approving
 
-    # compute the delta with current
+    # compute the delta between approved and current
     with open(find_current(name, 'json'), 'r') as f:
         htmldiff = HtmlDiff()
         current = json.load(f)
         diff = htmldiff.make_table(fromlines = json.dumps(current, indent = 4).splitlines(), tolines = json.dumps(approving, indent = 4).splitlines())
-        return render_template('approving.html', name = name, approving = approving, timestamp = timestamp, diff = diff, current = current)
+        return render_template('approving.html', name = name, approving = approving, timestamp = timestamp, diff = diff, current = current, form = form)
 
-    return render_template('approving.html', name = name, approving = approving, timestamp = timestamp, diff = None, current = current)
+    return render_template('approving.html', name = name, approving = approving, timestamp = timestamp, diff = None, current = current, form = form)
 
-@app.route('/approvings/<name>', defaults = {'ext': None, 'timestamp': 0})
-@app.route('/approvings/<name>/<int:timestamp>', defaults = {'ext': None})
-@app.route('/approvings/<name>.<ext>', defaults = {'timestamp': 0})
-@app.route('/approvings/<name>.<ext>/<int:timestamp>')
+@app.route('/approvings/<name>')
+@app.route('/approvings/<name>.<ext>')
 @detectresponse
-def approvings(name, ext, timestamp):
+def approvings(name, ext = None):
     approvings = {os.path.basename(f): app.config['FILE_DECODER'][ext if ext else 'json'](open(f, 'r')) for f in glob.iglob(os.path.join(app.config['DATA_PATH'], 'approving', '{}.{}'.format(name, ext if ext else 'json'), '*'))}
     
     if ext:
         return approvings
  
-    return render_template('approvings.html', name = name, approvings = approvings, timestamp = timestamp)
+    return render_template('approvings.html', name = name, approvings = approvings)
 
 @app.route('/archive/<name>', defaults = {'ext':  None, 'timestamp': 0})
 @app.route('/archive/<name>/<int:timestamp>', defaults = {'ext': None})
@@ -312,29 +335,34 @@ def approvings(name, ext, timestamp):
 @app.route('/archive/<name>.<ext>/<int:timestamp>')
 @detectresponse
 def archive(name, ext, timestamp):
+    """"""
     try:
         with open(find_timestamped_latest('archive', name, ext, timestamp), 'r') as f:
             archive = app.config['FILE_DECODER'][ext if ext else app.config['SUPPORTED_EXT'][0]](f)
 
-            if ext:
-                return archive
-
-            return render_template('archive.html', name = name, archive = archive, timestamp = timestamp)
-
     except IOError as ioe:
-        return render_template('archive.html', name = name, archive = None, timestamp = timestamp), 404
+        message = ''
 
-@app.route('/archives/<name>', defaults = {'ext': None})
-@app.route('/archives/<name>/<int:timestamp>', defaults = {'ext': None})
+        if ext:
+            return message, NOT_FOUND
+
+        return render_template('error.html', code = NOT_FOUND, message = message)
+
+    if ext:
+        return archive
+
+    return render_template('archive.html', name = name, archive = archive, timestamp = timestamp)
+
+@app.route('/archives/<name>')
 @app.route('/archives/<name>.<ext>')
-@app.route('/archives/<name>.<ext>/<int:timestamp>')
 @detectresponse
-def archives(name, ext, timestamp = 0):
+def archives(name, ext = None):
     archives = {os.path.basename(f): app.config['FILE_DECODER'][ext if ext else 'json'](open(f, 'r')) for f in glob.iglob(os.path.join(app.config['DATA_PATH'], 'archive', '{}.{}'.format(name, ext if ext else 'json'), '*'))}
     
     if ext:
         return archives
 
+    # compute diff from one to another
     htmldiff = HtmlDiff()
     archives = {}
     last_time = 0

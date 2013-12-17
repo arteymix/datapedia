@@ -26,7 +26,7 @@
     {% for timestamp in archives %}
         <section class="row">
             <div class="col-xs-12">
-                <h3><a href="{{ url_for('archive', name = name, timestamp = timestamp) }}">{{ name }} at {{ timestamp }}</a></h3>
+                <h3><a href="{{ url_for('archive', name = name, timestamp = timestamp) }}">{{ name }} at {{ timestamp | todatetime }}</a></h3>
                 {{ archives[timestamp] | safe }}
             </div>
         </section>
