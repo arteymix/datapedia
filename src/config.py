@@ -39,7 +39,7 @@ class Config(object):
         'json': lambda o, f: json.dump(o, f, separators = (',', ':'))
     }
 
-    SECRET_KEY = u'ioiu8&((*/io0io@£¢rs9'
+    SECRET_KEY = 'ioiu8&((*/io0iors9'
 
 class DevelopmentConfig(Config):
     pass
