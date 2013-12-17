@@ -3,7 +3,32 @@ Datapedia is a Wikipedia-like website designed for providing raw data instead of
 
 It is designed in a non-regressive way, which means that if your application is binded to datapedia, it shall theoritically never breaks. This is done through recursive analysis of data structure to ensure that no type has changed. Data can get more complex, but are always retrocompatible.
 
-Official documentation is available within the project.
+Official documentation is available within the project and right here http://arteymix.pythonanywhere.com/.
 
 ## Installing
 To install datapedia on your computer, you need Python with the Flask framework.
+
+    pip install flask    
+
+## Running
+Datapedia will generate a folder structure in the current working directory to store its data.
+
+    python src/datapedia.py
+    
+You may also want to run unit tests
+
+    python setup.py test
+    
+## Helping out!
+Datapedia is a community project and thus will freely accept any kind of collaboration! There are a few things that you can do to help out.
+
+### Write an example
+If you are genuine in a language, you might want to write an example for the main Datapedia page! Ensure that you respect coding conventions and use the standard library. To know which examples are missing, visit the home page of Datapedia at http://arteymix.pythonanywhere.com/.
+
+### Write documentation
+Datapedia api specifications are nearly complete. However, we need some documentation for developers and users. We need to write guidelines for data structure, some howtos designed for everyday people and some text here and there. The website is self-documented: you only need to work in the templates.
+
+### Test Datapedia
+Flask has very nice testing utilities and you might want to write and run some tests.
+    
+    
