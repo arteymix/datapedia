@@ -1,3 +1,5 @@
+# -*- Mode: Python; coding: utf-8; indent-tabs-mode: s; c-basic-offset: 4; tab-width: 4 -*- 
+import tempfile
 import json
 
 class Config(object):
@@ -36,3 +38,14 @@ class Config(object):
     FILE_ENCODER = {
         'json': lambda o, f: json.dump(o, f, separators = (',', ':'))
     }
+
+    SECRET_KEY = u'ioiu8&((*/io0io@£¢rs9'
+
+class DevelopmentConfig(Config):
+    pass
+
+class ProductionConfig(Config):
+    pass
+
+class TestingConfig(Config):
+    DATA_PATH = tempfile.mkdtemp()

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- Mode: Python; coding: utf-8; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- 
+# -*- Mode: Python; coding: utf-8; indent-tabs-mode: s; c-basic-offset: 4; tab-width: 4 -*- 
 #
 # main.py
 # Copyright (C) 2013 Guillaume Poirier-Morency <guillaume@guillaume-fedora-netbook>
@@ -378,6 +378,5 @@ def archives(name, ext = None):
     return render_template('archives.html', name = name, archives = archives)
 		
 if __name__ == '__main__':
-    app.secret_key = 'ioiu8&((*/io0io@£¢rs9'
-    app.config.from_object('config.Config')
+    app.config.from_object('config.DevelopmentConfig')
     app.run(debug = True)

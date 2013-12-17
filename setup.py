@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name = 'Datapedia',
@@ -9,6 +9,7 @@ setup(
     author_email = 'guillaumepoiriermorency@gmail.com',
     url = 'http://github.com/arteymix/datapedia/',
     download_url = 'https://github.com/arteymix/datapedia/archive/master.zip',
-    install_requires = ['flask'],
-    test_suite = 'tests'
+    packages = find_packages(),
+    requires = ['flask (>=0.10.1)'],
+    test_suite = 'tests',
 )

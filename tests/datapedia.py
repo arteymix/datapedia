@@ -1,6 +1,6 @@
 from unittest import TestCase
 from time import time
-import os
+import shutil
 import tempfile
 import json
 
@@ -10,27 +10,34 @@ class DatapediaTest(TestCase):
     """Test the endpoints of Datapedia"""
 
     def setUp(self):
-        app.config['DATA_PATH'] = tempfile.mkdtemp()
+        app.config.from_object('src.config.TestingConfig')
         self.client = app.test_client()
 
     def tearDown(self):
-        os.rmdir(app.config['DATA_PATH'])
+        shutil.rmtree(app.config['DATA_PATH'])
  
     def test_datapedia(self):
-        self.client.get('/')
+        response = self.client.get('/')
+        self.assertEquals(response.status_code, 200)
 
     def test_about(self):
-        self.client.get('/about')
+        response = self.client.get('/about')
+        self.assertEquals(response.status_code, 200)
 
     def test_current(self):
-        self.client.get('/current')
-
         data = {'data': 25}
 
         # should fail, no entries yet
         response = self.client.post('/current/foo.json', data = data)
         self.assertEquals(response.status_code, 405)
          
+        # submit a new entry (invalid)
+        response = self.client.put('/current/foo.json', data = data)
+        self.assertEquals(response.status_code, 400)
+
+        # add missing fields
+        data ['']
+
         # submit a new entry
         response = self.client.put('/current/foo.json', data = data)
         self.assertEquals(response.status_code, 200)
