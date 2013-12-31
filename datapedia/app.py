@@ -382,7 +382,3 @@ def find_approving(name, ext = None, timestamp = time()):
 
 def find_archive(name, ext = None, timestamp = time()):
     pass
-
-if __name__ == '__main__':
-    app.config.from_object('config.DevelopmentConfig')
-    app.run()
