@@ -11,39 +11,30 @@
 {% block content %}
 
     <section class="row">
-    <div class="col-xs-12">
-        <h2>{{ name }} proposed at {{ timestamp | todatetime }}</h2>
-        <ul class="nav nav-pills">
-            <li class="active"><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">HTML</a></li>
-            {% for ext in config['SUPPORTED_EXT'] %}
-                <li><a href="{{ url_for('approving', name = name, ext = ext, timestamp = timestamp) }}">{{ ext | upper }}</a></li>
-            {% endfor %}
-        </ul>
-        <br/>
-        {% if approving %}
-            
-            <div class="alert alert-info">This approving data needs <strong>{{ (current['approvers'] | count) - (approving['approvers'] | count) + 1 }} more approvments</strong> to replace the current version.</div>
-            
+        <div class="col-xs-12">
+            <h2>{{ name }} proposed at {{ timestamp | todatetime }}</h2>
+            <ul class="nav nav-pills">
+                <li class="active"><a href="{{ url_for('approving', name = name, timestamp = timestamp) }}">HTML</a></li>
+                {% for ext in config['SUPPORTED_EXT'] %}
+                    <li><a href="{{ url_for('approving', name = name, ext = ext, timestamp = timestamp) }}">{{ ext | upper }}</a></li>
+                {% endfor %}
+            </ul>
+            <br/>
             {% if request.remote_addr in approving['approvers'] %}
                 <div class="alert alert-info">You, <strong>{{ request.remote_addr }}</strong>, have already approved this data.</div>
             {% else %}
+                <div class="alert alert-info">This approving data needs <strong>{{ (current['approvers'] | count) - (approving['approvers'] | count) + 1 }} more approvments</strong> to replace the current version.</div>
                 <form class="form" method="post">
                     {% for field in form %}
-                        <div class="form-group">
-                            {{ field }}
-                        </div>
+                        <div class="form-group">{{ field }}</div>
                     {% endfor %}
                 </form>
             {% endif %}
             
             {{ diff | safe }}
                         
-        {% else %}
-            <div class="alert alert-danger">No data with name {{ name }} is marked for approvement.</div>
-        {% endif %}
-    </div>
-        </section>
-
+        </div>
+    </section>
 
 {% endblock %}
 

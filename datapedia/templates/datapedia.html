@@ -46,18 +46,14 @@
                     <div class="col-xs-12">
                         {% if search %}
                             <h2>Results for {{ search }}</h2>
-                        {% else %}
-                            <h2>Top data</h2>
+                            <ul class="list-unstyled list-inline">
+                                {% for name, ext in results %}
+                                    <li><a href="{{ url_for('current', name = name) }}">{{ name }}</a></li>
+                                {% else %}
+                                    <li><a href="{{ url_for('current', name = search) }}">Create {{ search }}</a></li>
+                                {% endfor %}
+                            </ul>
                         {% endif %}
-                        <ul class="list-unstyled list-inline">
-                            {% for name, ext in results %}
-                                <li><a href="{{ url_for('current', name = name) }}">{{ name }}</a></li>
-                            {% else %}
-
-                                <li><a href="{{ url_for('current', name = search) }}">Create {{ search }}</a>                                   </li>
-                                
-                            {% endfor %}
-                        </ul>
                     <div>
                 </section>
                 
@@ -69,8 +65,7 @@
                             <tr>
                                 <th>Endpoint</th>
                                 <th>Method</th>
-                                <th>Field</th>
-
+                                <th>Fields</th>
                             </tr>
                             <tr>
                                 <td rowspan="3"><code>current/{name}.{ext}</code></td>
@@ -86,19 +81,15 @@
                                 </td>
                                 <td>
                                     <p><strong>license</strong> license under which you provide your data.</p>
-                                    <p><strong>sources</strong> list or url for used as a reference for your data.</p>
-                                    <strong>data</strong>
+                                    <p><strong>sources</strong> list or url, book or any valuable reference used as a source for your data.</p>
+                                    <strong>data</strong> any kind of data that is encoded using the format defined by <code>ext</code>.
                                 </td>
-                            
                             </tr>
-                            
-                           
-                            
                             <tr>
-                            <td>
-                                <p><strong>PUT</strong> Creates a new data approved by your address ip if it does not exist already and archive it right away.</p>
+                                <td>
+                                    <p><strong>PUT</strong> Creates a new data approved by your address ip if it does not exist already and archive it right away.</p>
                                 If current data exists, you will get a HTTP 400 error code.
-                            </td>
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>archive/{name}.{ext}/{timestamp}</code></td>
@@ -107,16 +98,12 @@
                                     <p>If <code>{timestamp}</code> does not match an existing timestamp, you will be redirected to the latest archived data which timestamp is lower than the gived timestamp.</p>
                                     If no such data exists, you will get an HTTP 404 error code.
                                 </td>
-
-
                             </tr>
                             <tr>
                                 <td><code>archives/{name}.{ext}</code></td>
                                 <td>
                                     <p><strong>GET</strong> Archives of data with name <code>{name}</code> in the <code>{ext}</code> format.</p>
-                                    
                                 </td>
-
                             </tr>
                             <tr>
                                 <td><code>approving/{name}.{ext}/{timestamp}</code></td>
@@ -130,12 +117,17 @@
                                 <td><code>approvings/{name}.{ext}</code></td>
                                 <td>
                                     <p><strong>GET</strong> Datas awaiting for approvements with name <code>{name}</code> in the <code>{ext}</code> format.</p>
-
                                 </td>
-
                             </tr>
-                            
                         </table>
+                    </div>
+                </section>
+
+                <section class="row">
+                    <div class="col-xs-6">
+                        <h2>Datapedia version</h2>
+                        <p>Datapedia uses a clever version system for dealing with api retrocompatibility.</p>
+                        <p>In order </p>
                     </div>
                 </section>
                 
@@ -221,12 +213,10 @@
                    
                         <h3>Javascript (jQuery)</h3>
                         
-                        <pre class="prettyprint linenums">{{ jquery_example }}</pre>
+                        <pre class="prettyprint linenums">{{ ajax_example | e }}</pre>
                         
                         <noscript><div class="alert">You must enable Javascript to see this example.</div></noscript>
-                        
-                        <div id="javascript-jquery-example"></div>
-                        
+                        <div id="ajax-example"></div>
                     </div>
                 </section>
                     
@@ -277,7 +267,7 @@
             <script type="application/javascript" src="{{ url_for('static', filename = 'js/jquery.min.js') }}"></script>
             <script type="application/javascript" src="{{ url_for('static', filename = 'js/bootstrap.min.js') }}"></script>
             <script type="application/javascript" src="{{ url_for('static', filename = 'js/prettify.js') }}"></script>
-            <script type="application/javascript" src="{{ url_for('static', filename= 'js/ajax-example') }}"></script>
+            <script type="application/javascript" src="{{ url_for('static', filename = 'js/ajax-example.js') }}"></script>
         {% endblock %}
     </body>
 </html>

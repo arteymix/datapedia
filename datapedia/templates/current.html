@@ -21,7 +21,7 @@
                     <ul class="nav nav-pills">
                         <li class="active"><a href="{{ url_for('current', name = name) }}">HTML</a></li>
                         {% for ext in config['SUPPORTED_EXT'] %}
-                            <li><a href="{{ url_for('current', name = name, ext = ext) }}">{{ ext | upper }}</a></li>
+                            <li><a href="{{ url_for('current', version = config['VERSION'], name = name, ext = ext) }}">{{ ext | upper }}</a></li>
                         {% endfor %}
                     </ul>
                     <br/>

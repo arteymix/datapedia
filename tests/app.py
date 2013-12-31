@@ -1,20 +1,40 @@
+#!/usr/bin/python
+#
+# -*- Mode: Python; coding: utf-8; indent-tabs-mode: s; c-basic-offset: 4; tab-width: 4 -*- 
+#
+# Copyright (C) 2013 Guillaume Poirier-Morency <guillaumeoiriermorency@gmail.com>
+# 
+# Datapedia is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# Datapedia is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from unittest import TestCase
 from time import time
+import os
 import shutil
 import tempfile
 import json
+import sys
 
-from src.datapedia import app
+from datapedia import app
 
 class DatapediaTest(TestCase):
     """Test the endpoints of Datapedia"""
-
     def setUp(self):
-        app.config.from_object('src.config.TestingConfig')
+        app.config.from_object('datapedia.config.TestingConfig')
         self.client = app.test_client()
 
     def tearDown(self):
-        shutil.rmtree(app.config['DATA_PATH'])
+        shutil.rmtree(app.config['DATA_FOLDER_PATH'])
  
     def test_datapedia(self):
         response = self.client.get('/')

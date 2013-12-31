@@ -1,4 +1,20 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
+
+from datapedia import app
+
+class RunCommand(Command):
+    description = 'Run Datapedia HTTP server on a local port.'
+    user_options = []
+    
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        app.config.from_object('datapedia.config.DevelopmentConfig')
+        app.run()
 
 setup(
     name = 'Datapedia',
@@ -9,7 +25,10 @@ setup(
     author_email = 'guillaumepoiriermorency@gmail.com',
     url = 'http://github.com/arteymix/datapedia/',
     download_url = 'https://github.com/arteymix/datapedia/archive/master.zip',
-    packages = find_packages(),
+    packages = ['datapedia'],
     requires = ['flask (>=0.10.1)'],
+    cmdclass = {
+        'run': RunCommand
+    },
     test_suite = 'tests',
 )
